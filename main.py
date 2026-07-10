@@ -5,58 +5,61 @@ Main entry point for David's Trading Platform.
 
 Responsibilities:
 1. Create required folders.
-2. Load stock tickers from a CSV file.
+2. Download the S&P 500 ticker list.
 3. Scan the stocks.
-4. Display the analysis.
-5. Save results to a CSV file.
-6. Open a chart for the strongest stock.
+4. Display and save the results.
+5. Open a chart for the strongest stock.
 """
 
-from config import TICKER_FILE, CSV_FILE
-from scanner import scan_stocks
 from charts import plot_chart
-from utils import create_folders, load_tickers_from_csv
+from config import SP500_URL, TICKER_FILE, CSV_FILE
+from scanner import scan_stocks
+from utils import create_folders, download_sp500_tickers
 
 
 def main():
     """Run the trading platform."""
 
-    # Create the data and charts folders if they do not exist
+    # Create required project folders
     create_folders()
 
-    # Load ticker symbols from the CSV file
-    stocks = load_tickers_from_csv(TICKER_FILE)
+    # Download the current S&P 500 list
+    # The local CSV is used as a backup if this fails
+    stocks = download_sp500_tickers(
+        SP500_URL,
+        TICKER_FILE
+    )
 
-    # Stop the program if no tickers were loaded
+    # Stop if no ticker symbols could be loaded
     if not stocks:
         print("No ticker symbols were loaded. Program stopped.")
         return
 
-    print(f"\nLoaded {len(stocks)} ticker symbols.")
+    print(f"\nStarting scan of {len(stocks)} stocks...\n")
 
-    # Scan all loaded stocks
+    # Analyse every stock
     df, chart_data = scan_stocks(stocks)
 
-    # Stop if the scanner returned no results
+    # Stop if no stocks were successfully analysed
     if df.empty:
         print("No stock results were generated. Program stopped.")
         return
 
-    # Display the results in the terminal
-    print("\nStock Analysis")
-    print(df.to_string(index=False))
+    # Display only the top 20 stocks in the terminal
+    print("\nTop 20 Stock Opportunities")
+    print(df.head(20).to_string(index=False))
 
-    # Save the results to a CSV file
+    # Save all results to CSV
     df.to_csv(CSV_FILE, index=False)
 
-    print(f"\nResults saved to {CSV_FILE}")
+    print(f"\nFull results saved to {CSV_FILE}")
 
-    # The scanner sorts the strongest trend to the top
+    # Select the strongest stock
     best_ticker = df.iloc[0]["Ticker"]
 
     print(f"\nOpening chart for strongest stock: {best_ticker}")
 
-    # Plot the strongest stock using data stored during the scan
+    # Display its chart
     plot_chart(
         best_ticker,
         chart_data[best_ticker]["close"],
@@ -65,6 +68,5 @@ def main():
     )
 
 
-# Run main() only when this file is executed directly
 if __name__ == "__main__":
     main()
