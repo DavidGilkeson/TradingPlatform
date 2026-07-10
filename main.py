@@ -10,16 +10,18 @@ Responsibilities:
 4. Display and save the results.
 5. Open a chart for the strongest stock.
 """
-
+import time
 from charts import plot_chart
 from config import SP500_URL, TICKER_FILE, CSV_FILE
 from scanner import scan_stocks
 from utils import create_folders, download_sp500_tickers
 
 
+
 def main():
     """Run the trading platform."""
 
+    start_time = time.perf_counter()
     # Create required project folders
     create_folders()
 
@@ -65,7 +67,14 @@ def main():
         chart_data[best_ticker]["close"],
         chart_data[best_ticker]["ma_short"],
         chart_data[best_ticker]["ma_long"]
+        
+        
+        
     )
+    
+    end_time = time.perf_counter()
+
+    print(f"\nExecution Time: {end_time - start_time:.2f} seconds")
 
 
 if __name__ == "__main__":

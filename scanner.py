@@ -1,8 +1,8 @@
 """
 scanner.py
 
-Downloads stock data, calculates indicators, generates signals,
-and returns a ranked results table.
+Downloads stock data in one batch, calculates indicators,
+generates trading signals, and ranks the results.
 """
 
 import pandas as pd
@@ -14,38 +14,68 @@ from indicators import calculate_indicators, generate_signal
 
 def scan_stocks(stocks):
     """
-    Scan a list of stock tickers.
+    Scan multiple stock tickers using one batch download.
 
     Parameters:
-        stocks (list): Stock ticker symbols to analyse.
+        stocks (list): Ticker symbols to analyse.
 
     Returns:
         tuple:
-            - pandas DataFrame containing the ranked results
-            - dictionary containing chart data for each stock
+            - DataFrame containing ranked stock results
+            - Dictionary containing data used for charts
     """
 
-    # Store the summary results for the final table
+    # Store the summary results
     results = []
 
-    # Store full price history so it can be reused for charts
+    # Store each stock's historical data for charting
     chart_data = {}
 
-    # Analyse each ticker one at a time
+    print(f"Downloading market data for {len(stocks)} stocks...")
+
+    try:
+        # Download all stocks together instead of making
+        # a separate request for every ticker
+        batch_data = yf.download(
+            tickers=stocks,
+            period=PERIOD,
+            group_by="ticker",
+            auto_adjust=False,
+            progress=True,
+            threads=True
+        )
+
+    except Exception as error:
+        print(f"Batch download failed: {error}")
+        return pd.DataFrame(), {}
+
+    # Stop if Yahoo Finance returned no data
+    if batch_data.empty:
+        print("No market data was downloaded.")
+        return pd.DataFrame(), {}
+
+    print("\nDownload completed. Analysing stocks...")
+
+    # Analyse each ticker using the already-downloaded data
     for ticker in stocks:
-        print(f"Analysing {ticker}...")
-
         try:
-            # Download historical daily stock data
-            data = yf.download(
-                ticker,
-                period=PERIOD,
-                progress=False
-            )
+            # Extract this ticker's data from the batch
+            data = batch_data[ticker].copy()
 
-            # Skip the ticker if Yahoo Finance returned no data
+            # Remove rows containing no price information
+            data = data.dropna(how="all")
+
+            # Skip stocks with no usable data
             if data.empty:
-                print(f"Warning: No data returned for {ticker}. Skipping.")
+                print(f"Warning: No data for {ticker}. Skipping.")
+                continue
+
+            # We need enough rows to calculate the long moving average
+            if len(data) < LONG_MA:
+                print(
+                    f"Warning: Not enough data for {ticker}. "
+                    f"Only {len(data)} trading days found."
+                )
                 continue
 
             # Calculate moving averages and trend strength
@@ -63,41 +93,66 @@ def scan_stocks(stocks):
                 LONG_MA
             )
 
-            # Create a BUY, SELL, or HOLD signal
+            # Skip the stock if its latest values are missing
+            if pd.isna(latest_close):
+                print(f"Warning: Missing closing price for {ticker}.")
+                continue
+
+            if pd.isna(latest_ma_short) or pd.isna(latest_ma_long):
+                print(f"Warning: Missing moving averages for {ticker}.")
+                continue
+
+            # Generate the BUY, SELL, or HOLD signal
             signal = generate_signal(
                 latest_ma_short,
                 latest_ma_long
             )
 
-            # Add the stock summary to the results list
+            # Add this stock to the results table
             results.append({
                 "Ticker": ticker,
                 "Close": round(float(latest_close), 2),
-                f"{SHORT_MA}-Day MA": round(float(latest_ma_short), 2),
-                f"{LONG_MA}-Day MA": round(float(latest_ma_long), 2),
+                f"{SHORT_MA}-Day MA": round(
+                    float(latest_ma_short),
+                    2
+                ),
+                f"{LONG_MA}-Day MA": round(
+                    float(latest_ma_long),
+                    2
+                ),
                 "Strength (%)": round(float(strength), 2),
                 "Signal": signal
             })
 
-            # Save the full data for charting later
+            # Keep the historical data for charting
             chart_data[ticker] = {
                 "close": close,
                 "ma_short": ma_short,
                 "ma_long": ma_long
             }
 
+        except KeyError:
+            # This happens when a ticker was not returned
+            # in the batch download
+            print(f"Warning: {ticker} was not downloaded. Skipping.")
+
         except Exception as error:
-            # Keep scanning other stocks if one ticker fails
+            # One failed ticker should not stop the full scanner
             print(f"Error analysing {ticker}: {error}")
 
-    # Convert the results list into a pandas DataFrame
+    # Convert the collected results into a DataFrame
     df = pd.DataFrame(results)
 
-    # Only sort if at least one stock was analysed successfully
+    # Rank stocks from strongest to weakest
     if not df.empty:
-        df = df.sort_values(
-            by="Strength (%)",
-            ascending=False
-        ).reset_index(drop=True)
+        df = (
+            df.sort_values(
+                by="Strength (%)",
+                ascending=False
+            )
+            .reset_index(drop=True)
+        )
+
+    print(f"\nSuccessfully analysed {len(df)} stocks.")
 
     return df, chart_data
