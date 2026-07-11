@@ -29,3 +29,20 @@ def calculate_score(signal, strength, rsi, volume, average_volume):
         reasons.append("Above average volume")
 
     return score, reasons
+
+def confidence_rating(score):
+    
+    if score >= 90:
+        return "★★★★★ Strong Buy"
+
+    elif score >= 80:
+        return "★★★★☆ Buy"
+
+    elif score >= 70:
+        return "★★★☆☆ Watch"
+
+    elif score >= 60:
+        return "★★☆☆☆ Weak"
+
+    else:
+        return "★☆☆☆☆ Avoid"

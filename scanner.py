@@ -10,7 +10,7 @@ import yfinance as yf
 
 from config import PERIOD, SHORT_MA, LONG_MA
 from indicators import calculate_indicators, generate_signal
-from strategy import calculate_score
+from strategy import calculate_score, confidence_rating
 
 
 def scan_stocks(stocks):
@@ -25,7 +25,7 @@ def scan_stocks(stocks):
             - pandas.DataFrame containing ranked results
             - dictionary containing chart data for each stock
     """
-
+    
     # Store the summary results for the final table
     results = []
 
@@ -43,6 +43,7 @@ def scan_stocks(stocks):
             auto_adjust=False,
             progress=False,
             threads=True
+            
         )
 
     except Exception as error:
@@ -128,6 +129,8 @@ def scan_stocks(stocks):
                 latest_volume,
                 average_volume
             )
+            
+            confidence = confidence_rating(score)
 
             # Store the stock's summary data
             results.append({
@@ -147,7 +150,9 @@ def scan_stocks(stocks):
                 "Average Volume": int(average_volume),
                 "Signal": signal,
                 "Score": score,
+                "Confidence": confidence,
                 "Reasons": ", ".join(reasons)
+                
             })
 
             # Keep the historical data for charting later
