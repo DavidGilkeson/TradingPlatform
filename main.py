@@ -15,6 +15,7 @@ from charts import plot_chart
 from config import SP500_URL, TICKER_FILE, CSV_FILE
 from scanner import scan_stocks
 from utils import create_folders, download_sp500_tickers
+from backtester import backtest
 
 
 
@@ -73,6 +74,7 @@ def main():
     )
     
     end_time = time.perf_counter()
+    backtest(best_ticker)
 
     print(f"\nExecution Time: {end_time - start_time:.2f} seconds")
 

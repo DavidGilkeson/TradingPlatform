@@ -2,7 +2,6 @@ Ticker,Close,20-Day MA,50-Day MA,Strength (%),RSI,Volume,Average Volume,Signal,S
 DAL,87.39,88.16,80.11,10.05,58.37,10934900,8872515,BUY,100,★★★★★ Strong Buy,"Bullish moving averages, Strong trend, Healthy RSI, Above average volume"
 DELL,434.97,416.52,344.72,20.83,56.39,5137000,7961405,BUY,85,★★★★☆ Buy,"Bullish moving averages, Strong trend, Healthy RSI"
 AMAT,602.5,608.72,508.16,19.79,48.58,6271000,13009175,BUY,85,★★★★☆ Buy,"Bullish moving averages, Strong trend, Healthy RSI"
-MRNA,68.27,65.64,55.16,19.01,54.43,9159000,10235935,BUY,85,★★★★☆ Buy,"Bullish moving averages, Strong trend, Healthy RSI"
 SNDK,1915.92,1982.35,1688.24,17.42,44.23,10962500,12102110,BUY,85,★★★★☆ Buy,"Bullish moving averages, Strong trend, Healthy RSI"
 MU,979.3,1053.56,899.05,17.19,40.43,31563700,53649380,BUY,85,★★★★☆ Buy,"Bullish moving averages, Strong trend, Healthy RSI"
 KLAC,231.52,248.16,212.9,16.56,43.63,7443800,16031590,BUY,85,★★★★☆ Buy,"Bullish moving averages, Strong trend, Healthy RSI"
@@ -52,7 +51,6 @@ NTAP,168.87,159.71,145.72,9.6,63.02,3303000,3182670,BUY,70,★★★☆☆ Watch
 DDOG,257.54,241.84,220.86,9.5,70.57,5133700,4873640,BUY,70,★★★☆☆ Watch,"Bullish moving averages, Above average volume"
 GPC,125.62,115.06,105.74,8.81,70.2,2515700,2261040,BUY,70,★★★☆☆ Watch,"Bullish moving averages, Above average volume"
 TER,359.6,411.3,380.88,7.99,39.54,1571400,5599305,BUY,70,★★★☆☆ Watch,Bullish moving averages
-RCL,285.37,303.47,283.45,7.07,31.81,1149900,2563885,BUY,70,★★★☆☆ Watch,Bullish moving averages
 RL,394.9,401.82,375.44,7.03,37.38,434000,701605,BUY,70,★★★☆☆ Watch,Bullish moving averages
 CVS,104.15,102.47,95.92,6.83,67.12,9355800,8274415,BUY,70,★★★☆☆ Watch,"Bullish moving averages, Above average volume"
 INTC,109.84,124.58,117.0,6.47,33.09,70619700,125371385,BUY,70,★★★☆☆ Watch,Bullish moving averages
@@ -62,6 +60,7 @@ ARE,47.88,51.51,49.08,4.95,39.39,1870900,1757220,BUY,70,★★★☆☆ Watch,"B
 MRVL,235.81,272.17,231.47,17.58,29.14,15063200,49637995,BUY,65,★★☆☆☆ Weak,"Bullish moving averages, Strong trend"
 PANW,325.91,310.29,267.09,16.18,62.0,4677300,7764835,BUY,65,★★☆☆☆ Weak,"Bullish moving averages, Strong trend"
 TECH,71.3,64.2,55.58,15.5,83.94,2938700,8267320,BUY,65,★★☆☆☆ Weak,"Bullish moving averages, Strong trend"
+UAL,126.0,126.2,110.74,13.96,60.92,3964100,5711475,BUY,65,★★☆☆☆ Weak,"Bullish moving averages, Strong trend"
 FTNT,157.51,152.0,134.27,13.2,62.53,3518400,6380490,BUY,65,★★☆☆☆ Weak,"Bullish moving averages, Strong trend"
 CRL,233.41,208.91,186.21,12.19,84.28,873200,879605,BUY,65,★★☆☆☆ Weak,"Bullish moving averages, Strong trend"
 BBY,82.8,77.31,69.37,11.44,74.86,3625800,3833390,BUY,65,★★☆☆☆ Weak,"Bullish moving averages, Strong trend"
@@ -76,7 +75,6 @@ GWW,1375.76,1344.24,1281.65,4.88,52.27,221500,364805,BUY,60,★★☆☆☆ Weak
 BLDR,75.69,81.08,77.37,4.79,43.09,1267600,2368835,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
 ECL,274.31,274.8,262.86,4.54,56.74,649600,1665805,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
 KDP,31.67,31.85,30.47,4.52,55.87,7968600,18414815,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
-MMM,157.52,160.42,153.68,4.38,44.33,1943300,3632065,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
 IR,78.85,78.49,75.19,4.38,53.02,3122700,4342000,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
 BKNG,178.39,175.89,168.56,4.35,56.15,3974700,8669680,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
 PFG,112.23,110.1,105.52,4.34,55.98,1059700,1474305,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
@@ -106,7 +104,6 @@ VST,158.86,158.14,154.01,2.68,44.33,2994200,4275350,BUY,60,★★☆☆☆ Weak,
 DTE,150.27,150.32,146.4,2.67,55.13,1222000,1358830,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
 FRT,120.94,122.75,119.58,2.65,51.68,400600,923405,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
 IFF,77.53,78.15,76.15,2.63,52.14,1476100,2069680,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
-GEV,1091.57,1065.5,1038.73,2.58,48.3,1737300,3187005,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
 SYF,72.44,75.08,73.21,2.56,43.65,2903800,3809170,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
 J,125.83,125.06,122.02,2.49,59.79,1226700,1326270,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
 FE,47.92,47.54,46.45,2.34,59.89,1772100,4104395,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
@@ -116,6 +113,7 @@ CLX,96.56,95.76,93.71,2.19,51.57,2188500,2389355,BUY,60,★★☆☆☆ Weak,"Bu
 LIN,529.79,523.26,512.44,2.11,59.68,1858100,2469740,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
 CDNS,384.17,380.2,372.55,2.05,47.69,940500,2319485,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
 ALLE,136.63,135.86,133.16,2.03,56.1,1149700,1297985,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
+BRK-B,493.71,495.37,485.5,2.03,53.8,2735200,5135555,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
 NDSN,286.6,292.99,287.17,2.03,40.65,195100,450835,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
 HUBB,490.94,501.91,492.11,1.99,40.61,293010,616138,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
 CMS,75.4,75.51,74.12,1.88,56.86,2283700,3347795,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
@@ -146,6 +144,7 @@ PM,181.62,181.26,179.82,0.8,54.32,4384200,5496250,BUY,60,★★☆☆☆ Weak,"B
 BX,123.09,120.7,119.8,0.75,48.89,2568800,5173905,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
 IVZ,28.98,27.63,27.43,0.73,55.08,3991900,5299105,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
 ETN,407.28,408.32,405.56,0.68,45.81,1404000,2408715,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
+HPQ,24.22,23.4,23.28,0.51,58.26,11020900,15882270,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
 NI,46.9,47.39,47.15,0.51,47.75,2983000,4729520,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
 NRG,140.42,138.21,137.57,0.46,56.64,1085700,2761045,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
 EL,82.66,83.82,83.49,0.4,43.18,1462400,3358025,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
@@ -155,20 +154,19 @@ XEL,80.06,79.95,79.72,0.28,59.34,3537600,5936465,BUY,60,★★☆☆☆ Weak,"Bu
 PPL,35.78,36.15,36.06,0.23,53.22,5884700,10583725,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
 LMT,523.22,521.1,520.75,0.07,54.48,662200,1381940,BUY,60,★★☆☆☆ Weak,"Bullish moving averages, Healthy RSI"
 BAX,22.62,21.32,19.51,9.29,70.9,3102300,6482565,BUY,55,★☆☆☆☆ Avoid,Bullish moving averages
-DVA,232.8,219.09,200.93,9.04,83.32,773700,884175,BUY,55,★☆☆☆☆ Avoid,Bullish moving averages
 GL,179.13,174.83,162.63,7.5,74.23,318100,702725,BUY,55,★☆☆☆☆ Avoid,Bullish moving averages
 ABBV,248.08,240.43,223.92,7.37,74.65,5780700,9460065,BUY,55,★☆☆☆☆ Avoid,Bullish moving averages
 LLY,1188.58,1165.53,1086.75,7.25,65.5,2009100,3131035,BUY,55,★☆☆☆☆ Avoid,Bullish moving averages
 AJG,253.09,230.38,215.16,7.07,79.05,1033000,2006070,BUY,55,★☆☆☆☆ Avoid,Bullish moving averages
 COO,70.7,69.43,64.91,6.96,65.36,1413100,3068525,BUY,55,★☆☆☆☆ Avoid,Bullish moving averages
 INCY,116.71,109.9,102.82,6.88,80.18,1643700,2047305,BUY,55,★☆☆☆☆ Avoid,Bullish moving averages
+HSIC,84.4,82.88,77.62,6.77,63.11,1156500,1330340,BUY,55,★☆☆☆☆ Avoid,Bullish moving averages
 MNST,97.39,94.99,89.09,6.62,71.62,3569000,5969765,BUY,55,★☆☆☆☆ Avoid,Bullish moving averages
 FITB,57.07,55.44,52.02,6.58,70.96,4443800,7612735,BUY,55,★☆☆☆☆ Avoid,Bullish moving averages
 DASH,191.82,178.59,167.59,6.56,70.06,2652400,5225420,BUY,55,★☆☆☆☆ Avoid,Bullish moving averages
 CDW,144.39,133.55,125.33,6.55,66.83,1141900,2040875,BUY,55,★☆☆☆☆ Avoid,Bullish moving averages
 STT,180.22,171.92,161.68,6.33,69.44,2064200,2691640,BUY,55,★☆☆☆☆ Avoid,Bullish moving averages
 BAC,59.67,57.73,54.33,6.26,68.36,21910800,35097535,BUY,55,★☆☆☆☆ Avoid,Bullish moving averages
-CNC,67.35,64.73,61.0,6.11,69.87,2186100,5401560,BUY,55,★☆☆☆☆ Avoid,Bullish moving averages
 RVTY,112.29,107.03,100.88,6.1,71.2,929200,1521160,BUY,55,★☆☆☆☆ Avoid,Bullish moving averages
 VRTX,485.39,482.04,454.37,6.09,63.19,1430200,2068665,BUY,55,★☆☆☆☆ Avoid,Bullish moving averages
 BRO,67.66,63.48,59.85,6.07,72.41,1244100,2905645,BUY,55,★☆☆☆☆ Avoid,Bullish moving averages
@@ -193,6 +191,7 @@ GS,1055.18,1056.73,1010.08,4.62,39.79,1110100,2155840,BUY,55,★☆☆☆☆ Avo
 RF,31.02,29.73,28.55,4.14,73.44,12462900,10876255,BUY,55,★☆☆☆☆ Avoid,"Bullish moving averages, Above average volume"
 CB,347.83,339.57,329.15,3.17,67.33,1718600,1698080,BUY,55,★☆☆☆☆ Avoid,"Bullish moving averages, Above average volume"
 DRI,204.25,208.02,201.96,3.0,35.19,1554100,1676335,BUY,55,★☆☆☆☆ Avoid,Bullish moving averages
+HLT,335.48,340.34,330.93,2.84,35.33,938300,2409655,BUY,55,★☆☆☆☆ Avoid,Bullish moving averages
 SYK,329.78,317.3,309.07,2.66,64.42,2724600,2708985,BUY,55,★☆☆☆☆ Avoid,"Bullish moving averages, Above average volume"
 ODFL,227.63,223.63,217.9,2.63,62.09,2215700,1870285,BUY,55,★☆☆☆☆ Avoid,"Bullish moving averages, Above average volume"
 MAR,376.11,383.39,373.79,2.57,33.29,1028400,1647680,BUY,55,★☆☆☆☆ Avoid,Bullish moving averages
@@ -224,9 +223,9 @@ TRV,338.92,323.32,309.19,4.57,76.68,1074500,2187270,BUY,40,★☆☆☆☆ Avoid
 SHW,333.99,332.13,317.71,4.54,60.19,1081500,2797660,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
 SPG,218.77,220.09,210.59,4.51,60.12,2423600,2723835,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
 RTX,195.93,190.03,181.86,4.49,64.85,2821700,5114325,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
-DHR,199.05,188.11,180.16,4.41,72.44,3847600,4075590,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
 HST,23.18,24.21,23.19,4.39,27.52,8995000,10445195,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
 EW,92.21,89.9,86.35,4.11,64.31,3381400,4777635,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
+KEY,23.3,22.97,22.08,4.0,60.23,11117300,11473980,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
 BALL,61.69,60.26,57.95,3.99,67.31,1338300,3017080,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
 DG,118.92,115.59,111.18,3.97,60.43,2226100,2941005,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
 CHRW,193.5,187.38,180.27,3.94,61.29,991100,1418780,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
@@ -294,7 +293,6 @@ EG,370.58,353.03,347.35,1.63,83.1,226700,449500,BUY,40,★☆☆☆☆ Avoid,Bul
 GEHC,64.7,64.18,63.23,1.5,64.98,2559700,4672555,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
 ELV,416.23,401.38,395.63,1.45,63.85,779500,1640840,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
 KO,83.49,81.75,80.59,1.44,66.51,10693500,20228605,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
-ROP,355.9,342.07,337.44,1.37,70.74,860800,1315220,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
 MA,526.74,506.27,499.53,1.35,68.78,1616900,4090320,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
 INVH,29.6,29.61,29.22,1.32,62.85,2964200,6030035,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
 REG,79.62,79.6,78.57,1.31,61.0,1220700,1533445,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
@@ -310,15 +308,14 @@ OMC,81.93,76.15,75.35,1.06,78.75,2425700,5245175,BUY,40,★☆☆☆☆ Avoid,Bu
 TRGP,273.35,267.33,264.55,1.05,62.2,744000,1369405,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
 CTAS,179.64,174.63,172.89,1.01,61.96,1333600,2132410,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
 ETR,115.05,113.5,112.36,1.01,62.34,2484200,3273050,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
-MCK,805.96,776.8,769.13,1.0,67.21,491700,1187995,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
 UNP,286.96,271.43,268.91,0.94,89.13,1876200,2633170,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
 FDS,247.11,235.06,233.03,0.87,64.25,530000,1082305,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
 EA,206.41,204.39,202.73,0.82,82.47,1228500,2078680,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
 SRE,94.2,92.78,92.06,0.78,64.89,2409900,4340715,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
 AIG,79.17,76.74,76.22,0.68,67.77,2016500,4432800,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
 AVB,191.84,187.27,186.0,0.68,70.77,924300,1134400,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
-GPN,76.04,70.63,70.18,0.64,67.64,2285300,3863930,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
 CBRE,139.53,136.09,135.37,0.53,63.62,914900,2003000,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
+AES,14.78,14.66,14.59,0.46,66.0,5232300,8639965,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
 O,63.31,62.33,62.06,0.43,67.75,4597200,6383590,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
 HIG,138.78,133.26,132.7,0.42,76.55,1052400,1759075,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
 EBAY,117.2,110.95,110.51,0.39,70.13,2224600,3212405,BUY,40,★☆☆☆☆ Avoid,Bullish moving averages
@@ -356,7 +353,6 @@ MDLZ,58.83,60.48,61.14,-1.09,45.71,6428300,10396320,SELL,20,★☆☆☆☆ Avoi
 TSCO,30.43,30.64,31.0,-1.19,51.34,5159100,12757320,SELL,20,★☆☆☆☆ Avoid,Healthy RSI
 APP,506.98,500.6,507.16,-1.29,57.98,3491300,5629450,SELL,20,★☆☆☆☆ Avoid,Healthy RSI
 ARES,121.81,121.57,123.24,-1.36,41.37,1087100,2498425,SELL,20,★☆☆☆☆ Avoid,Healthy RSI
-KKR,96.94,94.61,96.13,-1.58,49.85,2839200,4682545,SELL,20,★☆☆☆☆ Avoid,Healthy RSI
 ORLY,86.28,88.36,90.0,-1.83,48.83,5027800,9159685,SELL,20,★☆☆☆☆ Avoid,Healthy RSI
 TAP,39.17,39.84,40.62,-1.92,48.51,3246700,3424075,SELL,20,★☆☆☆☆ Avoid,Healthy RSI
 TSLA,407.76,400.88,409.2,-2.03,51.99,33342700,46415260,SELL,20,★☆☆☆☆ Avoid,Healthy RSI
@@ -365,6 +361,7 @@ EOG,134.1,132.95,135.92,-2.19,57.46,1864500,4261720,SELL,20,★☆☆☆☆ Avoi
 NEE,87.96,87.08,89.04,-2.2,55.18,11223100,12211050,SELL,20,★☆☆☆☆ Avoid,Healthy RSI
 LHX,290.77,296.71,303.66,-2.29,46.32,626500,1590240,SELL,20,★☆☆☆☆ Avoid,Healthy RSI
 DPZ,299.46,303.85,311.52,-2.46,43.32,624400,1001185,SELL,20,★☆☆☆☆ Avoid,Healthy RSI
+BLK,1036.11,1009.6,1035.15,-2.47,46.97,595000,865810,SELL,20,★☆☆☆☆ Avoid,Healthy RSI
 TMUS,187.61,181.44,186.13,-2.52,55.32,4552000,6375335,SELL,20,★☆☆☆☆ Avoid,Healthy RSI
 NOC,539.63,529.07,543.12,-2.59,57.66,455700,1058820,SELL,20,★☆☆☆☆ Avoid,Healthy RSI
 VRT,318.86,316.18,324.74,-2.64,46.72,2998400,6804740,SELL,20,★☆☆☆☆ Avoid,Healthy RSI
@@ -394,6 +391,7 @@ SNPS,445.5,450.84,478.82,-5.84,43.91,839500,1998050,SELL,20,★☆☆☆☆ Avoi
 BG,114.32,113.35,120.5,-5.93,53.42,845600,1787095,SELL,20,★☆☆☆☆ Avoid,Healthy RSI
 VRSN,270.11,261.96,278.99,-6.1,55.37,369700,855500,SELL,20,★☆☆☆☆ Avoid,Healthy RSI
 DVN,42.23,42.47,45.28,-6.22,50.6,6860700,15387620,SELL,20,★☆☆☆☆ Avoid,Healthy RSI
+PLTR,126.79,124.92,133.25,-6.25,48.5,31097600,44660925,SELL,20,★☆☆☆☆ Avoid,Healthy RSI
 HII,286.09,287.73,307.12,-6.31,50.65,235800,490725,SELL,20,★☆☆☆☆ Avoid,Healthy RSI
 CSGP,28.39,30.04,32.14,-6.54,43.21,5916200,6988915,SELL,20,★☆☆☆☆ Avoid,Healthy RSI
 OXY,52.89,51.76,55.41,-6.58,54.22,6608200,10156010,SELL,20,★☆☆☆☆ Avoid,Healthy RSI
@@ -443,6 +441,7 @@ KR,60.54,59.23,62.92,-5.86,67.04,10399300,9846980,SELL,15,★☆☆☆☆ Avoid,
 HAS,78.96,82.11,87.23,-5.87,32.9,1656500,2057580,SELL,15,★☆☆☆☆ Avoid,
 CPRT,27.52,29.54,31.43,-6.02,35.63,9141500,14108110,SELL,15,★☆☆☆☆ Avoid,
 CEG,251.38,256.71,273.19,-6.03,33.6,2001200,3920105,SELL,15,★☆☆☆☆ Avoid,
+NEM,95.29,98.07,104.69,-6.32,34.06,4426600,8894415,SELL,15,★☆☆☆☆ Avoid,
 MPWR,1352.74,1422.72,1518.82,-6.33,34.88,577500,1206565,SELL,15,★☆☆☆☆ Avoid,
 DOW,29.03,29.96,34.13,-12.19,34.19,5712100,13189585,SELL,15,★☆☆☆☆ Avoid,
 LYB,56.35,57.34,65.32,-12.21,35.35,4504300,5836090,SELL,15,★☆☆☆☆ Avoid,
@@ -463,6 +462,8 @@ ATO,176.2,172.79,175.49,-1.54,62.31,527300,1350270,SELL,0,★☆☆☆☆ Avoid,
 GILD,129.83,127.77,129.85,-1.6,60.49,5935300,8616595,SELL,0,★☆☆☆☆ Avoid,
 WDAY,138.95,127.46,129.71,-1.74,70.56,1907700,5230130,SELL,0,★☆☆☆☆ Avoid,
 JKHY,150.32,135.47,138.1,-1.9,89.25,1758200,1796760,SELL,0,★☆☆☆☆ Avoid,
+APO,120.34,125.85,128.32,-1.92,26.32,3076900,4863170,SELL,0,★☆☆☆☆ Avoid,
+PYPL,46.32,43.54,44.4,-1.96,67.27,10628700,16069985,SELL,0,★☆☆☆☆ Avoid,
 NWS,30.93,29.35,29.96,-2.02,65.57,886200,2290625,SELL,0,★☆☆☆☆ Avoid,
 TPL,397.82,387.06,395.54,-2.14,65.65,229200,454915,SELL,0,★☆☆☆☆ Avoid,
 DIS,95.62,99.28,101.47,-2.16,28.94,10672500,11980620,SELL,0,★☆☆☆☆ Avoid,
@@ -482,7 +483,9 @@ TSN,57.83,57.55,61.29,-6.11,65.41,2925900,3412455,SELL,0,★☆☆☆☆ Avoid,
 CRM,163.32,160.09,172.89,-7.4,64.53,8317700,16585000,SELL,0,★☆☆☆☆ Avoid,
 TRMB,52.82,51.03,55.3,-7.71,74.27,1992300,3420425,SELL,0,★☆☆☆☆ Avoid,
 ADSK,208.45,199.29,222.39,-10.39,64.86,1232900,3444035,SELL,0,★☆☆☆☆ Avoid,
+ADBE,223.64,208.1,232.6,-10.53,82.1,3206100,8890475,SELL,0,★☆☆☆☆ Avoid,
 PTC,124.74,117.92,131.9,-10.6,69.85,1130600,2324405,SELL,0,★☆☆☆☆ Avoid,
+ECHO,96.0,104.89,117.52,-10.75,25.05,3405600,13044180,SELL,0,★☆☆☆☆ Avoid,
 ALB,126.05,145.19,165.93,-12.5,14.08,1465600,2555220,SELL,0,★☆☆☆☆ Avoid,
 ORCL,140.64,160.18,183.07,-12.5,12.43,29735200,34513450,SELL,0,★☆☆☆☆ Avoid,
 CBOE,268.07,258.92,302.06,-14.28,62.07,812600,1826460,SELL,0,★☆☆☆☆ Avoid,
