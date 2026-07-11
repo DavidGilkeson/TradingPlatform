@@ -1,27 +1,31 @@
-def calculate_score(signal, strength, rsi):
+def calculate_score(signal, strength, rsi, volume, average_volume):
 
     score = 0
+    reasons = []
 
+    # Moving Average Signal
     if signal == "BUY":
         score += 40
+        reasons.append("Bullish moving averages")
 
+    # Trend Strength
     if strength > 10:
-        score += 30
+        score += 25
+        reasons.append("Strong trend")
     elif strength > 5:
-        score += 20
-    elif strength > 2:
-        score += 10
+        score += 15
 
-    # Healthy RSI
+    # RSI
     if 40 <= rsi <= 60:
         score += 20
+        reasons.append("Healthy RSI")
 
-    # Slightly oversold
     elif 30 <= rsi < 40:
         score += 15
 
-    # Slightly overbought
-    elif 60 < rsi <= 70:
-        score += 10
+    # Volume
+    if volume > average_volume:
+        score += 15
+        reasons.append("Above average volume")
 
-    return score
+    return score, reasons

@@ -26,6 +26,10 @@ def calculate_rsi(close, period=14):
 def calculate_indicators(data, short_ma, long_ma):
 
     close = data["Close"].squeeze()
+    
+    volume = data["Volume"].squeeze()
+    
+    latest_volume, average_volume = calculate_volume(volume)
 
     ma_short = moving_average(close, short_ma)
 
@@ -55,6 +59,8 @@ def calculate_indicators(data, short_ma, long_ma):
         latest_ma_short,
         latest_ma_long,
         latest_rsi,
+        latest_volume,
+        average_volume,
         strength,
     )
 
@@ -68,3 +74,16 @@ def generate_signal(ma_short, ma_long):
         return "SELL"
 
     return "HOLD"
+
+
+def calculate_volume(volume, period=20):
+    """
+    Calculate the average trading volume.
+    """
+
+    average_volume = volume.rolling(period).mean()
+
+    latest_volume = volume.iloc[-1]
+    latest_average = average_volume.iloc[-1]
+
+    return latest_volume, latest_average
