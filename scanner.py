@@ -10,6 +10,7 @@ import yfinance as yf
 
 from config import PERIOD, SHORT_MA, LONG_MA
 from indicators import calculate_indicators, generate_signal
+from strategy import calculate_score
 
 
 def scan_stocks(stocks):
@@ -107,11 +108,14 @@ def scan_stocks(stocks):
                 latest_ma_short,
                 latest_ma_long
             )
+            
+            score = calculate_score(signal, strength)
 
             # Add this stock to the results table
             results.append({
                 "Ticker": ticker,
                 "Close": round(float(latest_close), 2),
+
                 f"{SHORT_MA}-Day MA": round(
                     float(latest_ma_short),
                     2
@@ -121,7 +125,8 @@ def scan_stocks(stocks):
                     2
                 ),
                 "Strength (%)": round(float(strength), 2),
-                "Signal": signal
+                "Signal": signal,
+                "Score": score
             })
 
             # Keep the historical data for charting
@@ -147,8 +152,8 @@ def scan_stocks(stocks):
     if not df.empty:
         df = (
             df.sort_values(
-                by="Strength (%)",
-                ascending=False
+                by=["Score", "Strength (%)"],
+                ascending=[False, False]
             )
             .reset_index(drop=True)
         )
