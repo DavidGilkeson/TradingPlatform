@@ -1,30 +1,27 @@
-"""
-strategy.py
-
-Contains the trading strategy and stock scoring logic.
-"""
-
-
-def calculate_score(signal, strength):
-    """
-    Calculate a basic score using the trading signal
-    and moving-average trend strength.
-
-    Maximum current score: 80 points.
-    """
+def calculate_score(signal, strength, rsi):
 
     score = 0
 
-    # Award points for a bullish moving-average signal
     if signal == "BUY":
-        score += 50
+        score += 40
 
-    # Award additional points based on trend strength
     if strength > 10:
         score += 30
     elif strength > 5:
         score += 20
     elif strength > 2:
+        score += 10
+
+    # Healthy RSI
+    if 40 <= rsi <= 60:
+        score += 20
+
+    # Slightly oversold
+    elif 30 <= rsi < 40:
+        score += 15
+
+    # Slightly overbought
+    elif 60 < rsi <= 70:
         score += 10
 
     return score

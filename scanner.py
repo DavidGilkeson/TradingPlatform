@@ -81,12 +81,15 @@ def scan_stocks(stocks):
 
             # Calculate moving averages and trend strength
             (
+                
                 close,
                 ma_short,
                 ma_long,
+                rsi,
                 latest_close,
                 latest_ma_short,
                 latest_ma_long,
+                latest_rsi,
                 strength
             ) = calculate_indicators(
                 data,
@@ -109,13 +112,17 @@ def scan_stocks(stocks):
                 latest_ma_long
             )
             
-            score = calculate_score(signal, strength)
+            score = calculate_score(
+                signal,
+                strength,
+                latest_rsi
+            )
 
             # Add this stock to the results table
             results.append({
                 "Ticker": ticker,
                 "Close": round(float(latest_close), 2),
-
+                "RSI": round(float(latest_rsi), 2),
                 f"{SHORT_MA}-Day MA": round(
                     float(latest_ma_short),
                     2
