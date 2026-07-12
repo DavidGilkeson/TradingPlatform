@@ -4,3 +4,4 @@ __pycache__/
 .env
 .venv/
 charts/
+.agents\skills/developing-with-streamlit/
