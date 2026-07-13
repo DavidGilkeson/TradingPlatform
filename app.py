@@ -2,6 +2,15 @@
 app.py
 
 Streamlit dashboard for Project Atlas.
+
+Features:
+- S&P 500 market scanner
+- Market Pulse
+- Score and signal filters
+- Ticker search
+- Best opportunity summary
+- Ranked results table
+- CSV download
 """
 
 import time
@@ -23,6 +32,7 @@ st.set_page_config(
 )
 
 st.title("📈 Project Atlas")
+
 st.caption(
     "S&P 500 market scanner using moving averages, RSI, "
     "volume analysis and stock scoring."
@@ -36,7 +46,7 @@ with st.sidebar:
     st.header("Scanner Controls")
 
     minimum_score = st.slider(
-        "Minimum score",
+        label="Minimum score",
         min_value=0,
         max_value=100,
         value=70,
@@ -44,29 +54,32 @@ with st.sidebar:
     )
 
     signal_filter = st.selectbox(
-        "Trading signal",
+        label="Trading signal",
         options=["All", "BUY", "SELL", "HOLD"]
     )
 
     ticker_search = st.text_input(
-        "Search ticker",
+        label="Search ticker",
         placeholder="Example: AAPL"
     )
 
     run_scanner = st.button(
-        "🚀 Scan Market",
+        label="🚀 Scan Market",
         type="primary",
         width="stretch"
     )
 
 
 # --------------------------------------------------
-# Run scanner
+# Run the market scanner
 # --------------------------------------------------
 if run_scanner:
     scan_start = time.perf_counter()
 
-    with st.spinner("Loading S&P 500 ticker symbols..."):
+    with st.spinner(
+        "Loading S&P 500 ticker symbols...",
+        show_time=True
+    ):
         stocks = download_sp500_tickers(
             SP500_URL,
             TICKER_FILE
@@ -77,7 +90,8 @@ if run_scanner:
         st.stop()
 
     with st.spinner(
-        f"Scanning {len(stocks)} stocks. This may take a few minutes..."
+        f"Scanning {len(stocks)} stocks...",
+        show_time=True
     ):
         df, chart_data = scan_stocks(stocks)
 
@@ -87,7 +101,8 @@ if run_scanner:
         st.error("The scanner did not generate any results.")
         st.stop()
 
-    # Save results so they remain available during Streamlit reruns
+    # Store scan results so they remain available
+    # when Streamlit reruns after a filter is changed.
     st.session_state["scan_results"] = df
     st.session_state["chart_data"] = chart_data
     st.session_state["scan_time"] = scan_time
@@ -98,19 +113,53 @@ if run_scanner:
 
 
 # --------------------------------------------------
-# Display saved results
+# Display stored scan results
 # --------------------------------------------------
 if "scan_results" in st.session_state:
     df = st.session_state["scan_results"]
     chart_data = st.session_state["chart_data"]
     scan_time = st.session_state["scan_time"]
 
-    # Market summary metrics
-    bullish_count = int((df["Signal"] == "BUY").sum())
-    bearish_count = int((df["Signal"] == "SELL").sum())
-    average_score = round(float(df["Score"].mean()), 1)
+    # --------------------------------------------------
+    # Calculate market summary values
+    # --------------------------------------------------
+    bullish_count = int(
+        (df["Signal"] == "BUY").sum()
+    )
 
-    metric1, metric2, metric3, metric4 = st.columns(4)
+    bearish_count = int(
+        (df["Signal"] == "SELL").sum()
+    )
+
+    average_score = round(
+        float(df["Score"].mean()),
+        1
+    )
+
+    average_rsi = round(
+        float(df["RSI"].mean()),
+        1
+    )
+
+    highest_score = int(
+        df["Score"].max()
+    )
+
+    total_stocks = len(df)
+
+    bullish_ratio = (
+        bullish_count / total_stocks
+        if total_stocks > 0
+        else 0
+    )
+
+    # --------------------------------------------------
+    # Dashboard metrics
+    # --------------------------------------------------
+    st.subheader("Market Overview")
+
+    metric1, metric2, metric3 = st.columns(3)
+    metric4, metric5, metric6 = st.columns(3)
 
     metric1.metric(
         label="📈 Bullish stocks",
@@ -128,6 +177,16 @@ if "scan_results" in st.session_state:
     )
 
     metric4.metric(
+        label="📊 Average RSI",
+        value=average_rsi
+    )
+
+    metric5.metric(
+        label="🏆 Highest score",
+        value=highest_score
+    )
+
+    metric6.metric(
         label="⚡ Scan time",
         value=f"{scan_time:.1f}s"
     )
@@ -135,9 +194,35 @@ if "scan_results" in st.session_state:
     st.divider()
 
     # --------------------------------------------------
-    # Apply filters
+    # Market Pulse
     # --------------------------------------------------
-    filtered_df = df[df["Score"] >= minimum_score].copy()
+    st.subheader("📊 Market Pulse")
+
+    st.progress(
+        bullish_ratio,
+        text=f"{bullish_ratio:.1%} of analysed stocks are bullish"
+    )
+
+    if bullish_ratio >= 0.70:
+        st.success("🟢 Strong bullish market")
+
+    elif bullish_ratio >= 0.50:
+        st.info("🟡 Moderately bullish market")
+
+    elif bullish_ratio >= 0.30:
+        st.warning("🟠 Weak or mixed market")
+
+    else:
+        st.error("🔴 Bearish market")
+
+    st.divider()
+
+    # --------------------------------------------------
+    # Apply sidebar filters
+    # --------------------------------------------------
+    filtered_df = df[
+        df["Score"] >= minimum_score
+    ].copy()
 
     if signal_filter != "All":
         filtered_df = filtered_df[
@@ -156,7 +241,7 @@ if "scan_results" in st.session_state:
         ]
 
     # --------------------------------------------------
-    # Best opportunity card
+    # Best opportunity
     # --------------------------------------------------
     st.subheader("🏆 Best Opportunity")
 
@@ -169,7 +254,9 @@ if "scan_results" in st.session_state:
     else:
         best_stock = filtered_df.iloc[0]
 
-        best1, best2, best3 = st.columns([1, 1, 2])
+        best1, best2, best3 = st.columns(
+            [1, 1, 2]
+        )
 
         best1.metric(
             label="Ticker",
@@ -185,12 +272,15 @@ if "scan_results" in st.session_state:
             st.markdown(
                 f"### {best_stock['Confidence']}"
             )
-            st.write(best_stock["Reasons"])
+
+            st.write(
+                best_stock["Reasons"]
+            )
 
         st.divider()
 
         # --------------------------------------------------
-        # Results table
+        # Opportunities table
         # --------------------------------------------------
         st.subheader(
             f"🔥 Opportunities ({len(filtered_df)} matches)"
@@ -240,13 +330,16 @@ if "scan_results" in st.session_state:
         # --------------------------------------------------
         # CSV download
         # --------------------------------------------------
-        csv_data = filtered_df.to_csv(index=False)
+        csv_data = filtered_df.to_csv(
+            index=False
+        )
 
         st.download_button(
             label="📥 Download Filtered Results",
             data=csv_data,
             file_name="project_atlas_results.csv",
-            mime="text/csv"
+            mime="text/csv",
+            width="stretch"
         )
 
 else:
