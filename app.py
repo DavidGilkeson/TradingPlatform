@@ -9,7 +9,9 @@ Features:
 - Score and signal filters
 - Ticker search
 - Best opportunity summary
-- Ranked results table
+- Persistent watchlist
+- Interactive Plotly charts
+- Strategy backtesting
 - CSV download
 """
 
@@ -17,17 +19,19 @@ import time
 
 import streamlit as st
 
+from backtester import run_backtest
+from charts import create_stock_chart
 from config import SP500_URL, TICKER_FILE
 from scanner import scan_stocks
 from utils import download_sp500_tickers
-from charts import create_stock_chart
-from backtester import run_backtest
 from watchlist import (
-    load_watchlist,
-    save_watchlist,
     add_stock,
-    remove_stock
+    load_watchlist,
+    remove_stock,
+    replace_watchlist
 )
+
+
 # --------------------------------------------------
 # Page configuration
 # --------------------------------------------------
@@ -41,14 +45,16 @@ st.title("📈 Project Atlas")
 
 st.caption(
     "S&P 500 market scanner using moving averages, RSI, "
-    "volume analysis and stock scoring."
+    "volume analysis, stock scoring and historical backtesting."
 )
 
-# -------------------------------
-# Load Watchlist
-# -------------------------------
 
+# --------------------------------------------------
+# Load persistent watchlist
+# --------------------------------------------------
 watchlist = load_watchlist()
+
+
 # --------------------------------------------------
 # Sidebar controls
 # --------------------------------------------------
@@ -79,18 +85,28 @@ with st.sidebar:
         width="stretch"
     )
 
-st.divider()
+    st.divider()
+    st.subheader("⭐ My Watchlist")
 
-st.subheader("⭐ My Watchlist")
+    if watchlist:
+        for saved_ticker in watchlist:
+            watch_col, remove_col = st.columns([3, 1])
 
-if watchlist:
+            watch_col.write(saved_ticker)
 
-    for stock in watchlist:
-        st.write(f"• {stock}")
+            if remove_col.button(
+                "✕",
+                key=f"remove_{saved_ticker}",
+                help=f"Remove {saved_ticker}"
+            ):
+                remove_stock(
+                    watchlist,
+                    saved_ticker
+                )
+                st.rerun()
+    else:
+        st.caption("No saved stocks.")
 
-else:
-
-    st.caption("No saved stocks.")
 
 # --------------------------------------------------
 # Run the market scanner
@@ -123,8 +139,7 @@ if run_scanner:
         st.error("The scanner did not generate any results.")
         st.stop()
 
-    # Store scan results so they remain available
-    # when Streamlit reruns after a filter is changed.
+    # Save the results so filters and buttons do not force a rescan.
     st.session_state["scan_results"] = df
     st.session_state["chart_data"] = chart_data
     st.session_state["scan_time"] = scan_time
@@ -143,7 +158,7 @@ if "scan_results" in st.session_state:
     scan_time = st.session_state["scan_time"]
 
     # --------------------------------------------------
-    # Calculate market summary values
+    # Market summary
     # --------------------------------------------------
     bullish_count = int(
         (df["Signal"] == "BUY").sum()
@@ -175,9 +190,6 @@ if "scan_results" in st.session_state:
         else 0
     )
 
-    # --------------------------------------------------
-    # Dashboard metrics
-    # --------------------------------------------------
     st.subheader("Market Overview")
 
     metric1, metric2, metric3 = st.columns(3)
@@ -227,20 +239,17 @@ if "scan_results" in st.session_state:
 
     if bullish_ratio >= 0.70:
         st.success("🟢 Strong bullish market")
-
     elif bullish_ratio >= 0.50:
         st.info("🟡 Moderately bullish market")
-
     elif bullish_ratio >= 0.30:
         st.warning("🟠 Weak or mixed market")
-
     else:
         st.error("🔴 Bearish market")
 
     st.divider()
 
     # --------------------------------------------------
-    # Apply sidebar filters
+    # Apply filters
     # --------------------------------------------------
     filtered_df = df[
         df["Score"] >= minimum_score
@@ -276,148 +285,6 @@ if "scan_results" in st.session_state:
     else:
         best_stock = filtered_df.iloc[0]
 
-    # --------------------------------------------------
-    # Interactive stock chart
-    # --------------------------------------------------
-        st.subheader("📈 Interactive Stock Chart")
-
-        chart_tickers = filtered_df["Ticker"].tolist()
-
-        selected_ticker = st.selectbox(
-            "Select a stock to chart",
-            options=chart_tickers,
-            index=0
-        )
-
-        selected_data = chart_data.get(selected_ticker)
-
-        if selected_data:
-            chart = create_stock_chart(
-                selected_ticker,
-                selected_data["open"],
-                selected_data["high"],
-                selected_data["low"],
-                selected_data["close"],
-                selected_data["volume"],
-                selected_data["ma_short"],
-                selected_data["ma_long"],
-                selected_data["rsi"]
-            )
-
-            st.plotly_chart(
-                chart,
-                width="stretch"
-            )
-            
-                        # ------------------------------------------
-            # Backtesting
-            # ------------------------------------------
-            st.subheader("🧪 Strategy Backtest")
-
-            starting_balance = st.number_input(
-                "Starting balance",
-                min_value=1000,
-                max_value=1_000_000,
-                value=10_000,
-                step=1000,
-                key="backtest_starting_balance"
-            )
-
-            if st.button(
-                "Run Backtest",
-                type="primary",
-                key="run_backtest"
-            ):
-                try:
-                    backtest = run_backtest(
-                        open_prices=selected_data["open"],
-                        close_prices=selected_data["close"],
-                        ma_short=selected_data["ma_short"],
-                        ma_long=selected_data["ma_long"],
-                        starting_balance=starting_balance
-                    )
-
-                    st.success(
-                        f"Backtest completed for {selected_ticker}."
-                    )
-
-                    result1, result2, result3 = st.columns(3)
-                    result4, result5, result6 = st.columns(3)
-
-                    result1.metric(
-                        "Ending Balance",
-                        f'${backtest["Ending Balance"]:,.2f}'
-                    )
-
-                    result2.metric(
-                        "Strategy Return",
-                        f'{backtest["Strategy Return (%)"]:.2f}%'
-                    )
-
-                    result3.metric(
-                        "Buy & Hold Return",
-                        f'{backtest["Buy and Hold Return (%)"]:.2f}%'
-                    )
-
-                    result4.metric(
-                        "Outperformance",
-                        f'{backtest["Outperformance (%)"]:.2f}%'
-                    )
-
-                    result5.metric(
-                        "Win Rate",
-                        f'{backtest["Win Rate (%)"]:.1f}%'
-                    )
-
-                    result6.metric(
-                        "Maximum Drawdown",
-                        f'{backtest["Maximum Drawdown (%)"]:.1f}%'
-                    )
-
-                    st.write(
-                        f'Number of completed trades: '
-                        f'{backtest["Number of Trades"]}'
-                    )
-
-                    equity_curve = backtest["Equity Curve"]
-
-                    if not equity_curve.empty:
-                        st.subheader("Portfolio Equity Curve")
-
-                        st.line_chart(
-                            equity_curve,
-                            width="stretch"
-                        )
-
-                    trade_log = backtest["Trade Log"]
-
-                    if not trade_log.empty:
-                        st.subheader("Trade History")
-
-                        st.dataframe(
-                            trade_log,
-                            width="stretch",
-                            hide_index=True
-                        )
-                    else:
-                        st.info(
-                            "No completed crossover trades occurred "
-                            "during this period."
-                        )
-
-                except Exception as error:
-                    st.error(
-                        f"Backtest failed: {error}"
-                    )
-
-        else:
-            st.warning(
-                f"Chart data is unavailable for {selected_ticker}."
-            )
-
-        st.divider()
-
-
         best1, best2, best3 = st.columns(
             [1, 1, 2]
         )
@@ -436,15 +303,231 @@ if "scan_results" in st.session_state:
             st.markdown(
                 f"### {best_stock['Confidence']}"
             )
-
             st.write(
                 best_stock["Reasons"]
+            )
+
+        if best_stock["Ticker"] not in watchlist:
+            if st.button(
+                "⭐ Add Best Opportunity to Watchlist",
+                key="add_best_to_watchlist"
+            ):
+                add_stock(
+                    watchlist,
+                    best_stock["Ticker"]
+                )
+
+                st.success(
+                    f'{best_stock["Ticker"]} added to your watchlist.'
+                )
+
+                st.rerun()
+        else:
+            st.info(
+                f'{best_stock["Ticker"]} is already in your watchlist.'
             )
 
         st.divider()
 
         # --------------------------------------------------
-        # Opportunities table
+        # Interactive chart
+        # --------------------------------------------------
+        st.subheader("📈 Interactive Stock Chart")
+
+        chart_tickers = filtered_df[
+            "Ticker"
+        ].tolist()
+
+        selected_ticker = st.selectbox(
+            label="Select a stock to analyse",
+            options=chart_tickers,
+            index=0
+        )
+
+        selected_data = chart_data.get(
+            selected_ticker
+        )
+
+        if selected_data is None:
+            st.warning(
+                f"Chart data is unavailable for {selected_ticker}."
+            )
+
+        else:
+            chart = create_stock_chart(
+                selected_ticker,
+                selected_data["open"],
+                selected_data["high"],
+                selected_data["low"],
+                selected_data["close"],
+                selected_data["volume"],
+                selected_data["ma_short"],
+                selected_data["ma_long"],
+                selected_data["rsi"]
+            )
+
+            st.plotly_chart(
+                chart,
+                width="stretch"
+            )
+
+            selected_action1, selected_action2 = st.columns(2)
+
+            with selected_action1:
+                if selected_ticker not in watchlist:
+                    if st.button(
+                        "⭐ Add Selected Stock to Watchlist",
+                        key=f"add_selected_{selected_ticker}",
+                        width="stretch"
+                    ):
+                        add_stock(
+                            watchlist,
+                            selected_ticker
+                        )
+
+                        st.success(
+                            f"{selected_ticker} added to your watchlist."
+                        )
+
+                        st.rerun()
+                else:
+                    st.info(
+                        f"{selected_ticker} is already saved."
+                    )
+
+            with selected_action2:
+                st.metric(
+                    label="Selected ticker",
+                    value=selected_ticker
+                )
+
+            st.divider()
+
+            # --------------------------------------------------
+            # Backtesting
+            # --------------------------------------------------
+            st.subheader("🧪 Strategy Backtest")
+
+            starting_balance = st.number_input(
+                label="Starting balance",
+                min_value=1000,
+                max_value=1_000_000,
+                value=10_000,
+                step=1000,
+                key=f"backtest_balance_{selected_ticker}"
+            )
+
+            if st.button(
+                "Run Backtest",
+                type="primary",
+                key=f"run_backtest_{selected_ticker}"
+            ):
+                try:
+                    backtest = run_backtest(
+                        open_prices=selected_data["open"],
+                        close_prices=selected_data["close"],
+                        ma_short=selected_data["ma_short"],
+                        ma_long=selected_data["ma_long"],
+                        starting_balance=starting_balance
+                    )
+
+                    st.success(
+                        f"Backtest completed for {selected_ticker}."
+                    )
+
+                    result1, result2, result3 = st.columns(3)
+                    result4, result5, result6 = st.columns(3)
+
+                    result1.metric(
+                        label="Ending Balance",
+                        value=(
+                            f'${backtest["Ending Balance"]:,.2f}'
+                        )
+                    )
+
+                    result2.metric(
+                        label="Strategy Return",
+                        value=(
+                            f'{backtest["Strategy Return (%)"]:.2f}%'
+                        )
+                    )
+
+                    result3.metric(
+                        label="Buy & Hold Return",
+                        value=(
+                            f'{backtest["Buy and Hold Return (%)"]:.2f}%'
+                        )
+                    )
+
+                    result4.metric(
+                        label="Outperformance",
+                        value=(
+                            f'{backtest["Outperformance (%)"]:.2f}%'
+                        )
+                    )
+
+                    result5.metric(
+                        label="Win Rate",
+                        value=(
+                            f'{backtest["Win Rate (%)"]:.1f}%'
+                        )
+                    )
+
+                    result6.metric(
+                        label="Maximum Drawdown",
+                        value=(
+                            f'{backtest["Maximum Drawdown (%)"]:.1f}%'
+                        )
+                    )
+
+                    st.write(
+                        "Number of completed trades: "
+                        f'{backtest["Number of Trades"]}'
+                    )
+
+                    equity_curve = backtest[
+                        "Equity Curve"
+                    ]
+
+                    if not equity_curve.empty:
+                        st.subheader(
+                            "Portfolio Equity Curve"
+                        )
+
+                        st.line_chart(
+                            equity_curve,
+                            width="stretch"
+                        )
+
+                    trade_log = backtest[
+                        "Trade Log"
+                    ]
+
+                    if not trade_log.empty:
+                        st.subheader(
+                            "Trade History"
+                        )
+
+                        st.dataframe(
+                            trade_log,
+                            width="stretch",
+                            hide_index=True
+                        )
+                    else:
+                        st.info(
+                            "No completed crossover trades occurred "
+                            "during this period."
+                        )
+
+                except Exception as error:
+                    st.error(
+                        f"Backtest failed: {error}"
+                    )
+
+        st.divider()
+
+               # --------------------------------------------------
+        # Opportunities and favourites table
         # --------------------------------------------------
         st.subheader(
             f"🔥 Opportunities ({len(filtered_df)} matches)"
@@ -461,15 +544,42 @@ if "scan_results" in st.session_state:
             "Reasons"
         ]
 
-        display_df = filtered_df[
+        favourite_df = filtered_df[
             display_columns
-        ].head(50)
+        ].head(50).copy()
 
-        st.dataframe(
-            display_df,
+        # Add a Boolean column that displays as a checkbox.
+        favourite_df.insert(
+            0,
+            "Favourite",
+            favourite_df["Ticker"].isin(watchlist)
+        )
+
+        st.caption(
+            "Tick or untick stocks, then press "
+            "**Save Favourites**."
+        )
+
+        edited_df = st.data_editor(
+            favourite_df,
             width="stretch",
             hide_index=True,
+            disabled=[
+                "Ticker",
+                "Close",
+                "Signal",
+                "Score",
+                "Confidence",
+                "RSI",
+                "Strength (%)",
+                "Reasons"
+            ],
             column_config={
+                "Favourite": st.column_config.CheckboxColumn(
+                    "⭐",
+                    help="Add or remove this stock from your watchlist",
+                    default=False
+                ),
                 "Close": st.column_config.NumberColumn(
                     "Close",
                     format="$%.2f"
@@ -488,8 +598,41 @@ if "scan_results" in st.session_state:
                     max_value=100,
                     format="%d"
                 )
-            }
+            },
+            key="favourites_editor"
         )
+
+        if st.button(
+            "⭐ Save Favourites",
+            type="primary",
+            width="stretch"
+        ):
+            visible_favourites = edited_df.loc[
+                edited_df["Favourite"],
+                "Ticker"
+            ].tolist()
+
+            visible_tickers = set(
+                favourite_df["Ticker"].tolist()
+            )
+
+            # Keep saved favourites that are not currently
+            # visible because of filters or the 50-row limit.
+            hidden_favourites = [
+                ticker
+                for ticker in watchlist
+                if ticker not in visible_tickers
+            ]
+
+            updated_watchlist = (
+                hidden_favourites
+                + visible_favourites
+            )
+
+            replace_watchlist(updated_watchlist)
+
+            st.success("Watchlist updated.")
+            st.rerun()
 
         # --------------------------------------------------
         # CSV download
