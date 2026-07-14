@@ -272,9 +272,14 @@ if "scan_results" in st.session_state:
         if selected_data:
             chart = create_stock_chart(
                 selected_ticker,
+                selected_data["open"],
+                selected_data["high"],
+                selected_data["low"],
                 selected_data["close"],
+                selected_data["volume"],
                 selected_data["ma_short"],
-                selected_data["ma_long"]
+                selected_data["ma_long"],
+                selected_data["rsi"]
             )
 
             st.plotly_chart(

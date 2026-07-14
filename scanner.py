@@ -165,7 +165,11 @@ def scan_stocks(stocks):
                 })
 
                 chart_data[ticker] = {
+                    "open": data["Open"].squeeze(),
+                    "high": data["High"].squeeze(),
+                    "low": data["Low"].squeeze(),
                     "close": close,
+                    "volume": data["Volume"].squeeze(),
                     "ma_short": ma_short,
                     "ma_long": ma_long,
                     "rsi": rsi
