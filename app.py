@@ -20,7 +20,7 @@ import streamlit as st
 from config import SP500_URL, TICKER_FILE
 from scanner import scan_stocks
 from utils import download_sp500_tickers
-
+from charts import create_stock_chart
 
 # --------------------------------------------------
 # Page configuration
@@ -253,6 +253,42 @@ if "scan_results" in st.session_state:
 
     else:
         best_stock = filtered_df.iloc[0]
+
+    # --------------------------------------------------
+    # Interactive stock chart
+    # --------------------------------------------------
+        st.subheader("📈 Interactive Stock Chart")
+
+        chart_tickers = filtered_df["Ticker"].tolist()
+
+        selected_ticker = st.selectbox(
+            "Select a stock to chart",
+            options=chart_tickers,
+            index=0
+        )
+
+        selected_data = chart_data.get(selected_ticker)
+
+        if selected_data:
+            chart = create_stock_chart(
+                selected_ticker,
+                selected_data["close"],
+                selected_data["ma_short"],
+                selected_data["ma_long"]
+            )
+
+            st.plotly_chart(
+                chart,
+                width="stretch"
+            )
+
+        else:
+            st.warning(
+                f"Chart data is unavailable for {selected_ticker}."
+            )
+
+        st.divider()
+
 
         best1, best2, best3 = st.columns(
             [1, 1, 2]

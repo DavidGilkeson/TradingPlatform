@@ -1,48 +1,75 @@
 """
 charts.py
 
-Contains functions used to display stock-price charts.
+Builds interactive Plotly charts for Project Atlas.
 """
 
-import matplotlib.pyplot as plt
-
-from config import SHORT_MA, LONG_MA
+import plotly.graph_objects as go
 
 
-def plot_chart(ticker, close, ma_short, ma_long):
+def create_stock_chart(
+    ticker,
+    close,
+    ma_short,
+    ma_long
+):
     """
-    Display the closing price and moving averages for a stock.
+    Create an interactive stock chart.
 
     Parameters:
-        ticker (str): Stock ticker symbol.
-        close (pandas.Series): Historical closing prices.
-        ma_short (pandas.Series): Short-term moving average.
-        ma_long (pandas.Series): Long-term moving average.
+        ticker: Stock ticker symbol.
+        close: Historical closing-price Series.
+        ma_short: Short moving-average Series.
+        ma_long: Long moving-average Series.
+
+    Returns:
+        Plotly Figure.
     """
 
-    # Create the chart window
-    plt.figure(figsize=(14, 6))
+    figure = go.Figure()
 
-    # Plot the closing price and moving averages
-    plt.plot(close, label="Closing Price")
-    plt.plot(
-        ma_short,
-        label=f"{SHORT_MA}-Day Moving Average"
-    )
-    plt.plot(
-        ma_long,
-        label=f"{LONG_MA}-Day Moving Average"
+    # Add the closing-price line
+    figure.add_trace(
+        go.Scatter(
+            x=close.index,
+            y=close,
+            mode="lines",
+            name="Closing Price"
+        )
     )
 
-    # Add chart information
-    plt.title(f"{ticker} Stock Analysis")
-    plt.xlabel("Date")
-    plt.ylabel("Price ($)")
+    # Add the short moving average
+    figure.add_trace(
+        go.Scatter(
+            x=ma_short.index,
+            y=ma_short,
+            mode="lines",
+            name="20-Day Moving Average"
+        )
+    )
 
-    # Display the chart legend and grid
-    plt.legend()
-    plt.grid(True)
+    # Add the long moving average
+    figure.add_trace(
+        go.Scatter(
+            x=ma_long.index,
+            y=ma_long,
+            mode="lines",
+            name="50-Day Moving Average"
+        )
+    )
 
-    # Adjust spacing and display the chart
-    plt.tight_layout()
-    plt.show()
+    figure.update_layout(
+        title=f"{ticker} Stock Analysis",
+        xaxis_title="Date",
+        yaxis_title="Price ($)",
+        hovermode="x unified",
+        height=600,
+        template="plotly_dark",
+        legend_title="Indicators"
+    )
+
+    figure.update_xaxes(
+        rangeslider_visible=True
+    )
+
+    return figure
