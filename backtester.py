@@ -1,67 +1,181 @@
-import yfinance as yf
+"""
+backtester.py
 
-from config import PERIOD, SHORT_MA, LONG_MA
-from indicators import calculate_indicators
+Backtests the moving-average crossover strategy used by Project Atlas.
+"""
+
+import pandas as pd
 
 
-def backtest(ticker):
+def run_backtest(
+    open_prices,
+    close_prices,
+    ma_short,
+    ma_long,
+    starting_balance=10_000
+):
+    """
+    Backtest a moving-average crossover strategy.
 
-    print(f"\nBacktesting {ticker}...")
+    Rules:
+    - Buy at the next day's opening price after a bullish crossover.
+    - Sell at the next day's opening price after a bearish crossover.
+    - Invest the full available balance in each position.
+    """
 
-    data = yf.download(
-        ticker,
-        period="5y",
-        progress=False
+    data = pd.DataFrame({
+        "Open": open_prices,
+        "Close": close_prices,
+        "MA Short": ma_short,
+        "MA Long": ma_long
+    }).dropna()
+
+    if len(data) < 2:
+        raise ValueError("Not enough historical data to run the backtest.")
+
+    # Identify crossover signals
+    data["Bullish Cross"] = (
+        (data["MA Short"] > data["MA Long"])
+        & (data["MA Short"].shift(1) <= data["MA Long"].shift(1))
     )
 
-    (
-        close,
-        ma_short,
-        ma_long,
-        rsi,
-        latest_close,
-        latest_ma_short,
-        latest_ma_long,
-        latest_rsi,
-        latest_volume,
-        average_volume,
-        strength,
-    ) = calculate_indicators(
-        data,
-        SHORT_MA,
-        LONG_MA,
+    data["Bearish Cross"] = (
+        (data["MA Short"] < data["MA Long"])
+        & (data["MA Short"].shift(1) >= data["MA Long"].shift(1))
     )
 
-    cash = 10000
-    shares = 0
+    cash = float(starting_balance)
+    shares = 0.0
 
-    for i in range(1, len(close)):
+    entry_price = None
+    entry_date = None
 
-        if (
-            ma_short.iloc[i] > ma_long.iloc[i]
-            and
-            ma_short.iloc[i - 1] <= ma_long.iloc[i - 1]
-            and
-            shares == 0
-        ):
+    trades = []
+    equity_values = []
 
-            shares = cash / close.iloc[i]
-            cash = 0
+    # A signal generated on one trading day is executed
+    # at the next trading day's opening price.
+    for index in range(1, len(data)):
+        previous_row = data.iloc[index - 1]
+        current_row = data.iloc[index]
+        current_date = data.index[index]
 
-        elif (
-            ma_short.iloc[i] < ma_long.iloc[i]
-            and
-            ma_short.iloc[i - 1] >= ma_long.iloc[i - 1]
-            and
-            shares > 0
-        ):
+        if previous_row["Bullish Cross"] and shares == 0:
+            entry_price = float(current_row["Open"])
+            entry_date = current_date
 
-            cash = shares * close.iloc[i]
-            shares = 0
+            shares = cash / entry_price
+            cash = 0.0
 
+        elif previous_row["Bearish Cross"] and shares > 0:
+            exit_price = float(current_row["Open"])
+
+            cash = shares * exit_price
+
+            trade_return = (
+                (exit_price - entry_price)
+                / entry_price
+            ) * 100
+
+            trades.append({
+                "Entry Date": entry_date,
+                "Entry Price": round(entry_price, 2),
+                "Exit Date": current_date,
+                "Exit Price": round(exit_price, 2),
+                "Return (%)": round(trade_return, 2)
+            })
+
+            shares = 0.0
+            entry_price = None
+            entry_date = None
+
+        portfolio_value = cash
+
+        if shares > 0:
+            portfolio_value += (
+                shares * float(current_row["Close"])
+            )
+
+        equity_values.append({
+            "Date": current_date,
+            "Strategy": portfolio_value
+        })
+
+    # Close any remaining position at the final closing price
     if shares > 0:
-        cash = shares * close.iloc[-1]
+        final_date = data.index[-1]
+        final_price = float(data["Close"].iloc[-1])
 
-    print(f"Final Portfolio Value: ${cash:,.2f}")
+        cash = shares * final_price
 
-    return cash
+        trade_return = (
+            (final_price - entry_price)
+            / entry_price
+        ) * 100
+
+        trades.append({
+            "Entry Date": entry_date,
+            "Entry Price": round(entry_price, 2),
+            "Exit Date": final_date,
+            "Exit Price": round(final_price, 2),
+            "Return (%)": round(trade_return, 2)
+        })
+
+        shares = 0.0
+
+    ending_balance = cash
+
+    total_return = (
+        (ending_balance - starting_balance)
+        / starting_balance
+    ) * 100
+
+    first_close = float(data["Close"].iloc[0])
+    final_close = float(data["Close"].iloc[-1])
+
+    buy_hold_return = (
+        (final_close - first_close)
+        / first_close
+    ) * 100
+
+    winning_trades = sum(
+        trade["Return (%)"] > 0
+        for trade in trades
+    )
+
+    win_rate = (
+        winning_trades / len(trades) * 100
+        if trades
+        else 0.0
+    )
+
+    equity_curve = pd.DataFrame(equity_values)
+
+    if not equity_curve.empty:
+        equity_curve = equity_curve.set_index("Date")
+
+        rolling_peak = equity_curve["Strategy"].cummax()
+
+        drawdown = (
+            equity_curve["Strategy"] - rolling_peak
+        ) / rolling_peak
+
+        maximum_drawdown = abs(drawdown.min()) * 100
+    else:
+        maximum_drawdown = 0.0
+
+    trade_log = pd.DataFrame(trades)
+
+    return {
+        "Starting Balance": starting_balance,
+        "Ending Balance": ending_balance,
+        "Strategy Return (%)": total_return,
+        "Buy and Hold Return (%)": buy_hold_return,
+        "Outperformance (%)": total_return - buy_hold_return,
+        "Number of Trades": len(trades),
+        "Winning Trades": winning_trades,
+        "Win Rate (%)": win_rate,
+        "Maximum Drawdown (%)": maximum_drawdown,
+        "Equity Curve": equity_curve,
+        "Trade Log": trade_log
+    }

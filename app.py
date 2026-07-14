@@ -21,6 +21,7 @@ from config import SP500_URL, TICKER_FILE
 from scanner import scan_stocks
 from utils import download_sp500_tickers
 from charts import create_stock_chart
+from backtester import run_backtest
 
 # --------------------------------------------------
 # Page configuration
@@ -286,6 +287,107 @@ if "scan_results" in st.session_state:
                 chart,
                 width="stretch"
             )
+            
+                        # ------------------------------------------
+            # Backtesting
+            # ------------------------------------------
+            st.subheader("🧪 Strategy Backtest")
+
+            starting_balance = st.number_input(
+                "Starting balance",
+                min_value=1000,
+                max_value=1_000_000,
+                value=10_000,
+                step=1000,
+                key="backtest_starting_balance"
+            )
+
+            if st.button(
+                "Run Backtest",
+                type="primary",
+                key="run_backtest"
+            ):
+                try:
+                    backtest = run_backtest(
+                        open_prices=selected_data["open"],
+                        close_prices=selected_data["close"],
+                        ma_short=selected_data["ma_short"],
+                        ma_long=selected_data["ma_long"],
+                        starting_balance=starting_balance
+                    )
+
+                    st.success(
+                        f"Backtest completed for {selected_ticker}."
+                    )
+
+                    result1, result2, result3 = st.columns(3)
+                    result4, result5, result6 = st.columns(3)
+
+                    result1.metric(
+                        "Ending Balance",
+                        f'${backtest["Ending Balance"]:,.2f}'
+                    )
+
+                    result2.metric(
+                        "Strategy Return",
+                        f'{backtest["Strategy Return (%)"]:.2f}%'
+                    )
+
+                    result3.metric(
+                        "Buy & Hold Return",
+                        f'{backtest["Buy and Hold Return (%)"]:.2f}%'
+                    )
+
+                    result4.metric(
+                        "Outperformance",
+                        f'{backtest["Outperformance (%)"]:.2f}%'
+                    )
+
+                    result5.metric(
+                        "Win Rate",
+                        f'{backtest["Win Rate (%)"]:.1f}%'
+                    )
+
+                    result6.metric(
+                        "Maximum Drawdown",
+                        f'{backtest["Maximum Drawdown (%)"]:.1f}%'
+                    )
+
+                    st.write(
+                        f'Number of completed trades: '
+                        f'{backtest["Number of Trades"]}'
+                    )
+
+                    equity_curve = backtest["Equity Curve"]
+
+                    if not equity_curve.empty:
+                        st.subheader("Portfolio Equity Curve")
+
+                        st.line_chart(
+                            equity_curve,
+                            width="stretch"
+                        )
+
+                    trade_log = backtest["Trade Log"]
+
+                    if not trade_log.empty:
+                        st.subheader("Trade History")
+
+                        st.dataframe(
+                            trade_log,
+                            width="stretch",
+                            hide_index=True
+                        )
+                    else:
+                        st.info(
+                            "No completed crossover trades occurred "
+                            "during this period."
+                        )
+
+                except Exception as error:
+                    st.error(
+                        f"Backtest failed: {error}"
+                    )
 
         else:
             st.warning(
