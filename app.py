@@ -22,7 +22,12 @@ from scanner import scan_stocks
 from utils import download_sp500_tickers
 from charts import create_stock_chart
 from backtester import run_backtest
-
+from watchlist import (
+    load_watchlist,
+    save_watchlist,
+    add_stock,
+    remove_stock
+)
 # --------------------------------------------------
 # Page configuration
 # --------------------------------------------------
@@ -39,7 +44,11 @@ st.caption(
     "volume analysis and stock scoring."
 )
 
+# -------------------------------
+# Load Watchlist
+# -------------------------------
 
+watchlist = load_watchlist()
 # --------------------------------------------------
 # Sidebar controls
 # --------------------------------------------------
@@ -70,6 +79,18 @@ with st.sidebar:
         width="stretch"
     )
 
+st.divider()
+
+st.subheader("⭐ My Watchlist")
+
+if watchlist:
+
+    for stock in watchlist:
+        st.write(f"• {stock}")
+
+else:
+
+    st.caption("No saved stocks.")
 
 # --------------------------------------------------
 # Run the market scanner
