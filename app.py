@@ -12,6 +12,7 @@ Features:
 - Persistent watchlist
 - Interactive Plotly charts
 - Strategy backtesting
+- Editable favourites table
 - CSV download
 """
 
@@ -23,12 +24,19 @@ from backtester import run_backtest
 from charts import create_stock_chart
 from config import SP500_URL, TICKER_FILE
 from scanner import scan_stocks
+from ui_components import (
+    apply_stock_filters,
+    display_best_opportunity,
+    display_market_overview,
+    display_market_pulse,
+    display_opportunities_editor,
+)
 from utils import download_sp500_tickers
 from watchlist import (
     add_stock,
     load_watchlist,
     remove_stock,
-    replace_watchlist
+    replace_watchlist,
 )
 
 
@@ -38,7 +46,7 @@ from watchlist import (
 st.set_page_config(
     page_title="Project Atlas",
     page_icon="📈",
-    layout="wide"
+    layout="wide",
 )
 
 st.title("📈 Project Atlas")
@@ -66,23 +74,23 @@ with st.sidebar:
         min_value=0,
         max_value=100,
         value=70,
-        step=5
+        step=5,
     )
 
     signal_filter = st.selectbox(
         label="Trading signal",
-        options=["All", "BUY", "SELL", "HOLD"]
+        options=["All", "BUY", "SELL", "HOLD"],
     )
 
     ticker_search = st.text_input(
         label="Search ticker",
-        placeholder="Example: AAPL"
+        placeholder="Example: AAPL",
     )
 
     run_scanner = st.button(
         label="🚀 Scan Market",
         type="primary",
-        width="stretch"
+        width="stretch",
     )
 
     st.divider()
@@ -97,11 +105,11 @@ with st.sidebar:
             if remove_col.button(
                 "✕",
                 key=f"remove_{saved_ticker}",
-                help=f"Remove {saved_ticker}"
+                help=f"Remove {saved_ticker}",
             ):
                 remove_stock(
                     watchlist,
-                    saved_ticker
+                    saved_ticker,
                 )
                 st.rerun()
     else:
@@ -116,11 +124,11 @@ if run_scanner:
 
     with st.spinner(
         "Loading S&P 500 ticker symbols...",
-        show_time=True
+        show_time=True,
     ):
         stocks = download_sp500_tickers(
             SP500_URL,
-            TICKER_FILE
+            TICKER_FILE,
         )
 
     if not stocks:
@@ -129,7 +137,7 @@ if run_scanner:
 
     with st.spinner(
         f"Scanning {len(stocks)} stocks...",
-        show_time=True
+        show_time=True,
     ):
         df, chart_data = scan_stocks(stocks)
 
@@ -139,7 +147,7 @@ if run_scanner:
         st.error("The scanner did not generate any results.")
         st.stop()
 
-    # Save the results so filters and buttons do not force a rescan.
+    # Store results so filters and buttons do not trigger a new scan.
     st.session_state["scan_results"] = df
     st.session_state["chart_data"] = chart_data
     st.session_state["scan_time"] = scan_time
@@ -158,118 +166,30 @@ if "scan_results" in st.session_state:
     scan_time = st.session_state["scan_time"]
 
     # --------------------------------------------------
-    # Market summary
+    # Market overview and pulse
     # --------------------------------------------------
-    bullish_count = int(
-        (df["Signal"] == "BUY").sum()
-    )
-
-    bearish_count = int(
-        (df["Signal"] == "SELL").sum()
-    )
-
-    average_score = round(
-        float(df["Score"].mean()),
-        1
-    )
-
-    average_rsi = round(
-        float(df["RSI"].mean()),
-        1
-    )
-
-    highest_score = int(
-        df["Score"].max()
-    )
-
-    total_stocks = len(df)
-
-    bullish_ratio = (
-        bullish_count / total_stocks
-        if total_stocks > 0
-        else 0
-    )
-
     st.subheader("Market Overview")
 
-    metric1, metric2, metric3 = st.columns(3)
-    metric4, metric5, metric6 = st.columns(3)
-
-    metric1.metric(
-        label="📈 Bullish stocks",
-        value=bullish_count
-    )
-
-    metric2.metric(
-        label="📉 Bearish stocks",
-        value=bearish_count
-    )
-
-    metric3.metric(
-        label="⭐ Average score",
-        value=average_score
-    )
-
-    metric4.metric(
-        label="📊 Average RSI",
-        value=average_rsi
-    )
-
-    metric5.metric(
-        label="🏆 Highest score",
-        value=highest_score
-    )
-
-    metric6.metric(
-        label="⚡ Scan time",
-        value=f"{scan_time:.1f}s"
+    display_market_overview(
+        df,
+        scan_time,
     )
 
     st.divider()
 
-    # --------------------------------------------------
-    # Market Pulse
-    # --------------------------------------------------
-    st.subheader("📊 Market Pulse")
-
-    st.progress(
-        bullish_ratio,
-        text=f"{bullish_ratio:.1%} of analysed stocks are bullish"
-    )
-
-    if bullish_ratio >= 0.70:
-        st.success("🟢 Strong bullish market")
-    elif bullish_ratio >= 0.50:
-        st.info("🟡 Moderately bullish market")
-    elif bullish_ratio >= 0.30:
-        st.warning("🟠 Weak or mixed market")
-    else:
-        st.error("🔴 Bearish market")
+    display_market_pulse(df)
 
     st.divider()
 
     # --------------------------------------------------
     # Apply filters
     # --------------------------------------------------
-    filtered_df = df[
-        df["Score"] >= minimum_score
-    ].copy()
-
-    if signal_filter != "All":
-        filtered_df = filtered_df[
-            filtered_df["Signal"] == signal_filter
-        ]
-
-    if ticker_search.strip():
-        search_value = ticker_search.strip().upper()
-
-        filtered_df = filtered_df[
-            filtered_df["Ticker"].str.contains(
-                search_value,
-                case=False,
-                na=False
-            )
-        ]
+    filtered_df = apply_stock_filters(
+        df=df,
+        minimum_score=minimum_score,
+        signal_filter=signal_filter,
+        ticker_search=ticker_search,
+    )
 
     # --------------------------------------------------
     # Best opportunity
@@ -285,36 +205,16 @@ if "scan_results" in st.session_state:
     else:
         best_stock = filtered_df.iloc[0]
 
-        best1, best2, best3 = st.columns(
-            [1, 1, 2]
-        )
-
-        best1.metric(
-            label="Ticker",
-            value=best_stock["Ticker"]
-        )
-
-        best2.metric(
-            label="Score",
-            value=f'{int(best_stock["Score"])}/100'
-        )
-
-        with best3:
-            st.markdown(
-                f"### {best_stock['Confidence']}"
-            )
-            st.write(
-                best_stock["Reasons"]
-            )
+        display_best_opportunity(best_stock)
 
         if best_stock["Ticker"] not in watchlist:
             if st.button(
                 "⭐ Add Best Opportunity to Watchlist",
-                key="add_best_to_watchlist"
+                key="add_best_to_watchlist",
             ):
                 add_stock(
                     watchlist,
-                    best_stock["Ticker"]
+                    best_stock["Ticker"],
                 )
 
                 st.success(
@@ -330,23 +230,19 @@ if "scan_results" in st.session_state:
         st.divider()
 
         # --------------------------------------------------
-        # Interactive chart
+        # Interactive stock chart
         # --------------------------------------------------
         st.subheader("📈 Interactive Stock Chart")
 
-        chart_tickers = filtered_df[
-            "Ticker"
-        ].tolist()
+        chart_tickers = filtered_df["Ticker"].tolist()
 
         selected_ticker = st.selectbox(
             label="Select a stock to analyse",
             options=chart_tickers,
-            index=0
+            index=0,
         )
 
-        selected_data = chart_data.get(
-            selected_ticker
-        )
+        selected_data = chart_data.get(selected_ticker)
 
         if selected_data is None:
             st.warning(
@@ -363,12 +259,12 @@ if "scan_results" in st.session_state:
                 selected_data["volume"],
                 selected_data["ma_short"],
                 selected_data["ma_long"],
-                selected_data["rsi"]
+                selected_data["rsi"],
             )
 
             st.plotly_chart(
                 chart,
-                width="stretch"
+                width="stretch",
             )
 
             selected_action1, selected_action2 = st.columns(2)
@@ -378,11 +274,11 @@ if "scan_results" in st.session_state:
                     if st.button(
                         "⭐ Add Selected Stock to Watchlist",
                         key=f"add_selected_{selected_ticker}",
-                        width="stretch"
+                        width="stretch",
                     ):
                         add_stock(
                             watchlist,
-                            selected_ticker
+                            selected_ticker,
                         )
 
                         st.success(
@@ -398,13 +294,13 @@ if "scan_results" in st.session_state:
             with selected_action2:
                 st.metric(
                     label="Selected ticker",
-                    value=selected_ticker
+                    value=selected_ticker,
                 )
 
             st.divider()
 
             # --------------------------------------------------
-            # Backtesting
+            # Strategy backtest
             # --------------------------------------------------
             st.subheader("🧪 Strategy Backtest")
 
@@ -414,13 +310,13 @@ if "scan_results" in st.session_state:
                 max_value=1_000_000,
                 value=10_000,
                 step=1000,
-                key=f"backtest_balance_{selected_ticker}"
+                key=f"backtest_balance_{selected_ticker}",
             )
 
             if st.button(
                 "Run Backtest",
                 type="primary",
-                key=f"run_backtest_{selected_ticker}"
+                key=f"run_backtest_{selected_ticker}",
             ):
                 try:
                     backtest = run_backtest(
@@ -428,7 +324,7 @@ if "scan_results" in st.session_state:
                         close_prices=selected_data["close"],
                         ma_short=selected_data["ma_short"],
                         ma_long=selected_data["ma_long"],
-                        starting_balance=starting_balance
+                        starting_balance=starting_balance,
                     )
 
                     st.success(
@@ -440,44 +336,40 @@ if "scan_results" in st.session_state:
 
                     result1.metric(
                         label="Ending Balance",
-                        value=(
-                            f'${backtest["Ending Balance"]:,.2f}'
-                        )
+                        value=f'${backtest["Ending Balance"]:,.2f}',
                     )
 
                     result2.metric(
                         label="Strategy Return",
                         value=(
                             f'{backtest["Strategy Return (%)"]:.2f}%'
-                        )
+                        ),
                     )
 
                     result3.metric(
                         label="Buy & Hold Return",
                         value=(
                             f'{backtest["Buy and Hold Return (%)"]:.2f}%'
-                        )
+                        ),
                     )
 
                     result4.metric(
                         label="Outperformance",
                         value=(
                             f'{backtest["Outperformance (%)"]:.2f}%'
-                        )
+                        ),
                     )
 
                     result5.metric(
                         label="Win Rate",
-                        value=(
-                            f'{backtest["Win Rate (%)"]:.1f}%'
-                        )
+                        value=f'{backtest["Win Rate (%)"]:.1f}%',
                     )
 
                     result6.metric(
                         label="Maximum Drawdown",
                         value=(
                             f'{backtest["Maximum Drawdown (%)"]:.1f}%'
-                        )
+                        ),
                     )
 
                     st.write(
@@ -485,33 +377,25 @@ if "scan_results" in st.session_state:
                         f'{backtest["Number of Trades"]}'
                     )
 
-                    equity_curve = backtest[
-                        "Equity Curve"
-                    ]
+                    equity_curve = backtest["Equity Curve"]
 
                     if not equity_curve.empty:
-                        st.subheader(
-                            "Portfolio Equity Curve"
-                        )
+                        st.subheader("Portfolio Equity Curve")
 
                         st.line_chart(
                             equity_curve,
-                            width="stretch"
+                            width="stretch",
                         )
 
-                    trade_log = backtest[
-                        "Trade Log"
-                    ]
+                    trade_log = backtest["Trade Log"]
 
                     if not trade_log.empty:
-                        st.subheader(
-                            "Trade History"
-                        )
+                        st.subheader("Trade History")
 
                         st.dataframe(
                             trade_log,
                             width="stretch",
-                            hide_index=True
+                            hide_index=True,
                         )
                     else:
                         st.info(
@@ -526,33 +410,11 @@ if "scan_results" in st.session_state:
 
         st.divider()
 
-               # --------------------------------------------------
+        # --------------------------------------------------
         # Opportunities and favourites table
         # --------------------------------------------------
         st.subheader(
             f"🔥 Opportunities ({len(filtered_df)} matches)"
-        )
-
-        display_columns = [
-            "Ticker",
-            "Close",
-            "Signal",
-            "Score",
-            "Confidence",
-            "RSI",
-            "Strength (%)",
-            "Reasons"
-        ]
-
-        favourite_df = filtered_df[
-            display_columns
-        ].head(50).copy()
-
-        # Add a Boolean column that displays as a checkbox.
-        favourite_df.insert(
-            0,
-            "Favourite",
-            favourite_df["Ticker"].isin(watchlist)
         )
 
         st.caption(
@@ -560,76 +422,34 @@ if "scan_results" in st.session_state:
             "**Save Favourites**."
         )
 
-        edited_df = st.data_editor(
-            favourite_df,
-            width="stretch",
-            hide_index=True,
-            disabled=[
-                "Ticker",
-                "Close",
-                "Signal",
-                "Score",
-                "Confidence",
-                "RSI",
-                "Strength (%)",
-                "Reasons"
-            ],
-            column_config={
-                "Favourite": st.column_config.CheckboxColumn(
-                    "⭐",
-                    help="Add or remove this stock from your watchlist",
-                    default=False
-                ),
-                "Close": st.column_config.NumberColumn(
-                    "Close",
-                    format="$%.2f"
-                ),
-                "RSI": st.column_config.NumberColumn(
-                    "RSI",
-                    format="%.2f"
-                ),
-                "Strength (%)": st.column_config.NumberColumn(
-                    "Strength",
-                    format="%.2f%%"
-                ),
-                "Score": st.column_config.ProgressColumn(
-                    "Score",
-                    min_value=0,
-                    max_value=100,
-                    format="%d"
-                )
-            },
-            key="favourites_editor"
+        favourite_df, edited_df = display_opportunities_editor(
+            filtered_df,
+            watchlist,
         )
 
         if st.button(
             "⭐ Save Favourites",
             type="primary",
-            width="stretch"
+            width="stretch",
         ):
             visible_favourites = edited_df.loc[
                 edited_df["Favourite"],
-                "Ticker"
+                "Ticker",
             ].tolist()
 
             visible_tickers = set(
                 favourite_df["Ticker"].tolist()
             )
 
-            # Keep saved favourites that are not currently
-            # visible because of filters or the 50-row limit.
             hidden_favourites = [
                 ticker
                 for ticker in watchlist
                 if ticker not in visible_tickers
             ]
 
-            updated_watchlist = (
-                hidden_favourites
-                + visible_favourites
+            replace_watchlist(
+                hidden_favourites + visible_favourites
             )
-
-            replace_watchlist(updated_watchlist)
 
             st.success("Watchlist updated.")
             st.rerun()
@@ -637,16 +457,14 @@ if "scan_results" in st.session_state:
         # --------------------------------------------------
         # CSV download
         # --------------------------------------------------
-        csv_data = filtered_df.to_csv(
-            index=False
-        )
+        csv_data = filtered_df.to_csv(index=False)
 
         st.download_button(
             label="📥 Download Filtered Results",
             data=csv_data,
             file_name="project_atlas_results.csv",
             mime="text/csv",
-            width="stretch"
+            width="stretch",
         )
 
 else:
