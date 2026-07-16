@@ -5,3 +5,4 @@ __pycache__/
 .venv/
 charts/
 .agents\skills/developing-with-streamlit/
+cache/
