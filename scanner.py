@@ -11,7 +11,7 @@ import time
 import pandas as pd
 import yfinance as yf
 
-from config import PERIOD, SHORT_MA, LONG_MA
+from config import LONG_MA, PERIOD, SHORT_MA
 from indicators import calculate_indicators, generate_signal
 from strategy import calculate_score, confidence_rating
 
@@ -35,14 +35,12 @@ def scan_stocks(stocks):
     # Smaller batches reduce memory use and improve stability
     batch_size = 25
 
-    total_batches = (
-        len(stocks) + batch_size - 1
-    ) // batch_size
+    total_batches = (len(stocks) + batch_size - 1) // batch_size
 
     print(f"Downloading market data for {len(stocks)} stocks...")
 
     for start in range(0, len(stocks), batch_size):
-        ticker_batch = stocks[start:start + batch_size]
+        ticker_batch = stocks[start : start + batch_size]
 
         batch_number = (start // batch_size) + 1
 
@@ -61,7 +59,7 @@ def scan_stocks(stocks):
                 auto_adjust=False,
                 progress=False,
                 threads=False,
-                timeout=30
+                timeout=30,
             )
 
         except Exception as error:
@@ -101,12 +99,8 @@ def scan_stocks(stocks):
                     latest_rsi,
                     latest_volume,
                     average_volume,
-                    strength
-                ) = calculate_indicators(
-                    data,
-                    SHORT_MA,
-                    LONG_MA
-                )
+                    strength,
+                ) = calculate_indicators(data, SHORT_MA, LONG_MA)
 
                 required_values = [
                     latest_close,
@@ -115,54 +109,37 @@ def scan_stocks(stocks):
                     latest_rsi,
                     latest_volume,
                     average_volume,
-                    strength
+                    strength,
                 ]
 
                 if any(pd.isna(value) for value in required_values):
-                    print(
-                        f"Warning: Incomplete indicator data "
-                        f"for {ticker}. Skipping."
-                    )
+                    print(f"Warning: Incomplete indicator data for {ticker}. Skipping.")
                     continue
 
-                signal = generate_signal(
-                    latest_ma_short,
-                    latest_ma_long
-                )
+                signal = generate_signal(latest_ma_short, latest_ma_long)
 
                 score, reasons = calculate_score(
-                    signal,
-                    strength,
-                    latest_rsi,
-                    latest_volume,
-                    average_volume
+                    signal, strength, latest_rsi, latest_volume, average_volume
                 )
 
                 confidence = confidence_rating(score)
 
-                results.append({
-                    "Ticker": ticker,
-                    "Close": round(float(latest_close), 2),
-                    f"{SHORT_MA}-Day MA": round(
-                        float(latest_ma_short),
-                        2
-                    ),
-                    f"{LONG_MA}-Day MA": round(
-                        float(latest_ma_long),
-                        2
-                    ),
-                    "Strength (%)": round(
-                        float(strength),
-                        2
-                    ),
-                    "RSI": round(float(latest_rsi), 2),
-                    "Volume": int(latest_volume),
-                    "Average Volume": int(average_volume),
-                    "Signal": signal,
-                    "Score": score,
-                    "Confidence": confidence,
-                    "Reasons": ", ".join(reasons)
-                })
+                results.append(
+                    {
+                        "Ticker": ticker,
+                        "Close": round(float(latest_close), 2),
+                        f"{SHORT_MA}-Day MA": round(float(latest_ma_short), 2),
+                        f"{LONG_MA}-Day MA": round(float(latest_ma_long), 2),
+                        "Strength (%)": round(float(strength), 2),
+                        "RSI": round(float(latest_rsi), 2),
+                        "Volume": int(latest_volume),
+                        "Average Volume": int(average_volume),
+                        "Signal": signal,
+                        "Score": score,
+                        "Confidence": confidence,
+                        "Reasons": ", ".join(reasons),
+                    }
+                )
 
                 chart_data[ticker] = {
                     "open": data["Open"].squeeze(),
@@ -172,14 +149,11 @@ def scan_stocks(stocks):
                     "volume": data["Volume"].squeeze(),
                     "ma_short": ma_short,
                     "ma_long": ma_long,
-                    "rsi": rsi
+                    "rsi": rsi,
                 }
 
             except KeyError:
-                print(
-                    f"Warning: {ticker} was not returned "
-                    f"in batch {batch_number}."
-                )
+                print(f"Warning: {ticker} was not returned in batch {batch_number}.")
 
             except Exception as error:
                 print(f"Error analysing {ticker}: {error}")
@@ -194,13 +168,9 @@ def scan_stocks(stocks):
     df = pd.DataFrame(results)
 
     if not df.empty:
-        df = (
-            df.sort_values(
-                by=["Score", "Strength (%)"],
-                ascending=[False, False]
-            )
-            .reset_index(drop=True)
-        )
+        df = df.sort_values(
+            by=["Score", "Strength (%)"], ascending=[False, False]
+        ).reset_index(drop=True)
 
     print(f"\nSuccessfully analysed {len(df)} stocks.")
 

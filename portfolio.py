@@ -11,7 +11,6 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-
 PORTFOLIO_FILE = Path("portfolio.json")
 
 
@@ -86,27 +85,16 @@ def add_position(
 
     for position in portfolio:
         if position["ticker"] == ticker:
-            existing_quantity = float(
-                position["quantity"]
-            )
+            existing_quantity = float(position["quantity"])
 
-            existing_price = float(
-                position["average_price"]
-            )
+            existing_price = float(position["average_price"])
 
-            total_quantity = (
-                existing_quantity + quantity
-            )
+            total_quantity = existing_quantity + quantity
 
-            total_cost = (
-                existing_quantity * existing_price
-                + quantity * average_price
-            )
+            total_cost = existing_quantity * existing_price + quantity * average_price
 
             position["quantity"] = total_quantity
-            position["average_price"] = (
-                total_cost / total_quantity
-            )
+            position["average_price"] = total_cost / total_quantity
 
             return save_portfolio(portfolio)
 
@@ -130,9 +118,7 @@ def remove_position(
     """
 
     updated_portfolio = [
-        position
-        for position in portfolio
-        if position["ticker"] != ticker
+        position for position in portfolio if position["ticker"] != ticker
     ]
 
     portfolio.clear()
@@ -149,9 +135,7 @@ def _get_current_price(
     Get the latest price from the scanner results.
     """
 
-    ticker_rows = df.loc[
-        df["Ticker"] == ticker
-    ]
+    ticker_rows = df.loc[df["Ticker"] == ticker]
 
     if ticker_rows.empty:
         return None
@@ -194,9 +178,7 @@ def calculate_portfolio(
     for position in portfolio:
         ticker = position["ticker"]
         quantity = float(position["quantity"])
-        average_price = float(
-            position["average_price"]
-        )
+        average_price = float(position["average_price"])
 
         current_price = _get_current_price(
             ticker,
@@ -210,18 +192,12 @@ def calculate_portfolio(
             profit_loss = None
             profit_loss_percent = None
         else:
-            market_value = (
-                quantity * current_price
-            )
+            market_value = quantity * current_price
 
-            profit_loss = (
-                market_value - cost_basis
-            )
+            profit_loss = market_value - cost_basis
 
             profit_loss_percent = (
-                profit_loss / cost_basis * 100
-                if cost_basis > 0
-                else 0
+                profit_loss / cost_basis * 100 if cost_basis > 0 else 0
             )
 
         rows.append(
@@ -253,9 +229,7 @@ def display_add_position_form(
     ):
         st.markdown("#### Add Position")
 
-        ticker_column, quantity_column, price_column = (
-            st.columns(3)
-        )
+        ticker_column, quantity_column, price_column = st.columns(3)
 
         ticker = ticker_column.text_input(
             "Ticker",
@@ -291,15 +265,10 @@ def display_add_position_form(
             )
 
             if saved:
-                st.success(
-                    f"{ticker.strip().upper()} added "
-                    "to your portfolio."
-                )
+                st.success(f"{ticker.strip().upper()} added to your portfolio.")
                 st.rerun()
             else:
-                st.error(
-                    "The position could not be saved."
-                )
+                st.error("The position could not be saved.")
 
 
 def display_portfolio(
@@ -315,10 +284,7 @@ def display_portfolio(
     display_add_position_form(portfolio)
 
     if not portfolio:
-        st.info(
-            "Your portfolio is empty. "
-            "Add your first position above."
-        )
+        st.info("Your portfolio is empty. Add your first position above.")
         return
 
     portfolio_df = calculate_portfolio(
@@ -326,31 +292,17 @@ def display_portfolio(
         df,
     )
 
-    valid_values = portfolio_df.dropna(
-        subset=["Market Value"]
-    )
+    valid_values = portfolio_df.dropna(subset=["Market Value"])
 
-    total_cost = float(
-        portfolio_df["Cost Basis"].sum()
-    )
+    total_cost = float(portfolio_df["Cost Basis"].sum())
 
-    total_value = float(
-        valid_values["Market Value"].sum()
-    )
+    total_value = float(valid_values["Market Value"].sum())
 
-    total_profit_loss = (
-        total_value - total_cost
-    )
+    total_profit_loss = total_value - total_cost
 
-    total_return = (
-        total_profit_loss / total_cost * 100
-        if total_cost > 0
-        else 0
-    )
+    total_return = total_profit_loss / total_cost * 100 if total_cost > 0 else 0
 
-    metric1, metric2, metric3, metric4 = (
-        st.columns(4)
-    )
+    metric1, metric2, metric3, metric4 = st.columns(4)
 
     metric1.metric(
         "Total Cost",
@@ -453,14 +405,9 @@ def display_portfolio(
     for position in portfolio:
         ticker = position["ticker"]
 
-        position_column, remove_column = (
-            st.columns([4, 1])
-        )
+        position_column, remove_column = st.columns([4, 1])
 
-        position_column.write(
-            f"**{ticker}** — "
-            f'{position["quantity"]:.4f} shares'
-        )
+        position_column.write(f"**{ticker}** — {position['quantity']:.4f} shares")
 
         if remove_column.button(
             "Remove",
@@ -473,11 +420,7 @@ def display_portfolio(
             )
 
             if removed:
-                st.success(
-                    f"{ticker} removed."
-                )
+                st.success(f"{ticker} removed.")
                 st.rerun()
             else:
-                st.error(
-                    f"{ticker} could not be removed."
-                )
+                st.error(f"{ticker} could not be removed.")

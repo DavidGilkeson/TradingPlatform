@@ -33,17 +33,12 @@ def display_market_pulse(df):
     total_stocks = len(df)
     bullish_count = int((df["Signal"] == "BUY").sum())
 
-    bullish_ratio = (
-        bullish_count / total_stocks
-        if total_stocks > 0
-        else 0
-    )
+    bullish_ratio = bullish_count / total_stocks if total_stocks > 0 else 0
 
     st.subheader("📊 Market Pulse")
 
     st.progress(
-        bullish_ratio,
-        text=f"{bullish_ratio:.1%} of analysed stocks are bullish"
+        bullish_ratio, text=f"{bullish_ratio:.1%} of analysed stocks are bullish"
     )
 
     if bullish_ratio >= 0.70:
@@ -56,32 +51,19 @@ def display_market_pulse(df):
         st.error("🔴 Bearish market")
 
 
-def apply_stock_filters(
-    df,
-    minimum_score,
-    signal_filter,
-    ticker_search
-):
+def apply_stock_filters(df, minimum_score, signal_filter, ticker_search):
     """Apply dashboard filters to the scanner results."""
 
-    filtered_df = df[
-        df["Score"] >= minimum_score
-    ].copy()
+    filtered_df = df[df["Score"] >= minimum_score].copy()
 
     if signal_filter != "All":
-        filtered_df = filtered_df[
-            filtered_df["Signal"] == signal_filter
-        ]
+        filtered_df = filtered_df[filtered_df["Signal"] == signal_filter]
 
     search_value = ticker_search.strip().upper()
 
     if search_value:
         filtered_df = filtered_df[
-            filtered_df["Ticker"].str.contains(
-                search_value,
-                case=False,
-                na=False
-            )
+            filtered_df["Ticker"].str.contains(search_value, case=False, na=False)
         ]
 
     return filtered_df
@@ -92,30 +74,17 @@ def display_best_opportunity(best_stock):
 
     best1, best2, best3 = st.columns([1, 1, 2])
 
-    best1.metric(
-        "Ticker",
-        best_stock["Ticker"]
-    )
+    best1.metric("Ticker", best_stock["Ticker"])
 
-    best2.metric(
-        "Score",
-        f'{int(best_stock["Score"])}/100'
-    )
+    best2.metric("Score", f"{int(best_stock['Score'])}/100")
 
     with best3:
-        st.markdown(
-            f"### {best_stock['Confidence']}"
-        )
+        st.markdown(f"### {best_stock['Confidence']}")
 
-        st.write(
-            best_stock["Reasons"]
-        )
+        st.write(best_stock["Reasons"])
 
 
-def display_opportunities_editor(
-    filtered_df,
-    watchlist
-):
+def display_opportunities_editor(filtered_df, watchlist):
     """
     Display the editable favourites table.
 
@@ -131,18 +100,12 @@ def display_opportunities_editor(
         "Confidence",
         "RSI",
         "Strength (%)",
-        "Reasons"
+        "Reasons",
     ]
 
-    favourite_df = filtered_df[
-        display_columns
-    ].head(50).copy()
+    favourite_df = filtered_df[display_columns].head(50).copy()
 
-    favourite_df.insert(
-        0,
-        "Favourite",
-        favourite_df["Ticker"].isin(watchlist)
-    )
+    favourite_df.insert(0, "Favourite", favourite_df["Ticker"].isin(watchlist))
 
     edited_df = st.data_editor(
         favourite_df,
@@ -156,33 +119,20 @@ def display_opportunities_editor(
             "Confidence",
             "RSI",
             "Strength (%)",
-            "Reasons"
+            "Reasons",
         ],
         column_config={
             "Favourite": st.column_config.CheckboxColumn(
-                "⭐",
-                help="Add or remove this stock from your watchlist"
+                "⭐", help="Add or remove this stock from your watchlist"
             ),
-            "Close": st.column_config.NumberColumn(
-                "Close",
-                format="$%.2f"
-            ),
-            "RSI": st.column_config.NumberColumn(
-                "RSI",
-                format="%.2f"
-            ),
-            "Strength (%)": st.column_config.NumberColumn(
-                "Strength",
-                format="%.2f%%"
-            ),
+            "Close": st.column_config.NumberColumn("Close", format="$%.2f"),
+            "RSI": st.column_config.NumberColumn("RSI", format="%.2f"),
+            "Strength (%)": st.column_config.NumberColumn("Strength", format="%.2f%%"),
             "Score": st.column_config.ProgressColumn(
-                "Score",
-                min_value=0,
-                max_value=100,
-                format="%d"
-            )
+                "Score", min_value=0, max_value=100, format="%d"
+            ),
         },
-        key="favourites_editor"
+        key="favourites_editor",
     )
 
     return favourite_df, edited_df

@@ -1,6 +1,3 @@
-import pandas as pd
-
-
 def moving_average(series, period):
     return series.rolling(period).mean()
 
@@ -26,9 +23,9 @@ def calculate_rsi(close, period=14):
 def calculate_indicators(data, short_ma, long_ma):
 
     close = data["Close"].squeeze()
-    
+
     volume = data["Volume"].squeeze()
-    
+
     latest_volume, average_volume = calculate_volume(volume)
 
     ma_short = moving_average(close, short_ma)
@@ -45,10 +42,7 @@ def calculate_indicators(data, short_ma, long_ma):
 
     latest_rsi = rsi.iloc[-1]
 
-    strength = (
-        (latest_ma_short - latest_ma_long)
-        / latest_ma_long
-    ) * 100
+    strength = ((latest_ma_short - latest_ma_long) / latest_ma_long) * 100
 
     return (
         close,

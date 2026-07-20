@@ -17,7 +17,7 @@ def load_watchlist():
         return []
 
     try:
-        with open(WATCHLIST_FILE, "r", encoding="utf-8") as file:
+        with open(WATCHLIST_FILE, encoding="utf-8") as file:
             watchlist = json.load(file)
 
         return sorted(set(watchlist))
@@ -30,19 +30,11 @@ def save_watchlist(watchlist):
     """Save ticker symbols to disk."""
 
     cleaned_watchlist = sorted(
-        {
-            str(ticker).strip().upper()
-            for ticker in watchlist
-            if str(ticker).strip()
-        }
+        {str(ticker).strip().upper() for ticker in watchlist if str(ticker).strip()}
     )
 
     with open(WATCHLIST_FILE, "w", encoding="utf-8") as file:
-        json.dump(
-            cleaned_watchlist,
-            file,
-            indent=4
-        )
+        json.dump(cleaned_watchlist, file, indent=4)
 
 
 def add_stock(watchlist, ticker):
@@ -61,9 +53,7 @@ def remove_stock(watchlist, ticker):
     """Remove one ticker from the watchlist."""
 
     updated_watchlist = {
-        stock
-        for stock in watchlist
-        if stock != ticker.strip().upper()
+        stock for stock in watchlist if stock != ticker.strip().upper()
     }
 
     updated_watchlist = sorted(updated_watchlist)

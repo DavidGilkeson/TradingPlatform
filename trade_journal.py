@@ -12,7 +12,6 @@ from uuid import uuid4
 import pandas as pd
 import streamlit as st
 
-
 JOURNAL_FILE = Path("trade_journal.json")
 
 
@@ -83,25 +82,17 @@ def calculate_trade_result(
     entry_value = entry_price * quantity
 
     if direction == "LONG":
-        gross_result = (
-            exit_price - entry_price
-        ) * quantity
+        gross_result = (exit_price - entry_price) * quantity
 
     elif direction == "SHORT":
-        gross_result = (
-            entry_price - exit_price
-        ) * quantity
+        gross_result = (entry_price - exit_price) * quantity
 
     else:
         gross_result = 0.0
 
     net_result = gross_result - fees
 
-    return_percent = (
-        net_result / entry_value * 100
-        if entry_value > 0
-        else 0.0
-    )
+    return_percent = net_result / entry_value * 100 if entry_value > 0 else 0.0
 
     return net_result, return_percent
 
@@ -141,14 +132,12 @@ def add_trade(
     if exit_date < entry_date:
         return False
 
-    profit_loss, return_percent = (
-        calculate_trade_result(
-            direction=direction,
-            entry_price=entry_price,
-            exit_price=exit_price,
-            quantity=quantity,
-            fees=fees,
-        )
+    profit_loss, return_percent = calculate_trade_result(
+        direction=direction,
+        entry_price=entry_price,
+        exit_price=exit_price,
+        quantity=quantity,
+        fees=fees,
     )
 
     trade = {
@@ -187,11 +176,7 @@ def delete_trade(
     Delete a trade using its unique ID.
     """
 
-    updated_trades = [
-        trade
-        for trade in trades
-        if trade.get("id") != trade_id
-    ]
+    updated_trades = [trade for trade in trades if trade.get("id") != trade_id]
 
     trades.clear()
     trades.extend(updated_trades)
@@ -265,11 +250,7 @@ def trades_to_dataframe(
                 "Result": (
                     "WIN"
                     if profit_loss > 0
-                    else (
-                        "LOSS"
-                        if profit_loss < 0
-                        else "BREAK EVEN"
-                    )
+                    else ("LOSS" if profit_loss < 0 else "BREAK EVEN")
                 ),
                 "Strategy": trade.get(
                     "strategy",
@@ -319,9 +300,7 @@ def display_trade_form(
         "trade_journal_form",
         clear_on_submit=True,
     ):
-        ticker_column, direction_column = (
-            st.columns(2)
-        )
+        ticker_column, direction_column = st.columns(2)
 
         ticker = ticker_column.text_input(
             label="Ticker",
@@ -336,9 +315,7 @@ def display_trade_form(
             ],
         )
 
-        entry_date_column, exit_date_column = (
-            st.columns(2)
-        )
+        entry_date_column, exit_date_column = st.columns(2)
 
         entry_date = entry_date_column.date_input(
             label="Entry date",
@@ -350,9 +327,7 @@ def display_trade_form(
             value=date.today(),
         )
 
-        entry_column, exit_column, quantity_column = (
-            st.columns(3)
-        )
+        entry_column, exit_column, quantity_column = st.columns(3)
 
         entry_price = entry_column.number_input(
             label="Entry price",
@@ -398,18 +373,12 @@ def display_trade_form(
 
         setup = st.text_input(
             label="Trade setup",
-            placeholder=(
-                "Example: Price crossed above the "
-                "50-day moving average"
-            ),
+            placeholder=("Example: Price crossed above the 50-day moving average"),
         )
 
         notes = st.text_area(
             label="Trade notes",
-            placeholder=(
-                "Why did you enter? What went well? "
-                "What would you change?"
-            ),
+            placeholder=("Why did you enter? What went well? What would you change?"),
             height=120,
         )
 
@@ -421,9 +390,7 @@ def display_trade_form(
 
         if submitted:
             if exit_date < entry_date:
-                st.error(
-                    "Exit date cannot be before the entry date."
-                )
+                st.error("Exit date cannot be before the entry date.")
                 return
 
             saved = add_trade(
@@ -442,15 +409,12 @@ def display_trade_form(
             )
 
             if saved:
-                st.success(
-                    f"{ticker.strip().upper()} trade saved."
-                )
+                st.success(f"{ticker.strip().upper()} trade saved.")
                 st.rerun()
 
             else:
                 st.error(
-                    "The trade could not be saved. "
-                    "Check the values and try again."
+                    "The trade could not be saved. Check the values and try again."
                 )
 
 
@@ -466,55 +430,27 @@ def display_journal_metrics(
 
     total_trades = len(journal_df)
 
-    winning_trades = journal_df.loc[
-        journal_df["Profit/Loss"] > 0
-    ]
+    winning_trades = journal_df.loc[journal_df["Profit/Loss"] > 0]
 
-    losing_trades = journal_df.loc[
-        journal_df["Profit/Loss"] < 0
-    ]
+    losing_trades = journal_df.loc[journal_df["Profit/Loss"] < 0]
 
-    win_rate = (
-        len(winning_trades) / total_trades * 100
-        if total_trades > 0
-        else 0
-    )
+    win_rate = len(winning_trades) / total_trades * 100 if total_trades > 0 else 0
 
-    net_profit = float(
-        journal_df["Profit/Loss"].sum()
-    )
+    net_profit = float(journal_df["Profit/Loss"].sum())
 
-    average_return = float(
-        journal_df["Return (%)"].mean()
-    )
+    average_return = float(journal_df["Return (%)"].mean())
 
     average_winner = (
-        float(
-            winning_trades[
-                "Profit/Loss"
-            ].mean()
-        )
-        if not winning_trades.empty
-        else 0.0
+        float(winning_trades["Profit/Loss"].mean()) if not winning_trades.empty else 0.0
     )
 
     average_loser = (
-        float(
-            losing_trades[
-                "Profit/Loss"
-            ].mean()
-        )
-        if not losing_trades.empty
-        else 0.0
+        float(losing_trades["Profit/Loss"].mean()) if not losing_trades.empty else 0.0
     )
 
     profit_factor = (
-        winning_trades["Profit/Loss"].sum()
-        / abs(
-            losing_trades["Profit/Loss"].sum()
-        )
-        if not losing_trades.empty
-        and losing_trades["Profit/Loss"].sum() != 0
+        winning_trades["Profit/Loss"].sum() / abs(losing_trades["Profit/Loss"].sum())
+        if not losing_trades.empty and losing_trades["Profit/Loss"].sum() != 0
         else 0.0
     )
 
@@ -549,15 +485,10 @@ def display_journal_metrics(
     metric6.metric(
         label="Profit Factor",
         value=f"{profit_factor:.2f}",
-        help=(
-            "Gross winning profits divided by "
-            "gross losing profits."
-        ),
+        help=("Gross winning profits divided by gross losing profits."),
     )
 
-    st.caption(
-        f"Average losing trade: ${average_loser:,.2f}"
-    )
+    st.caption(f"Average losing trade: ${average_loser:,.2f}")
 
 
 def display_equity_curve(
@@ -577,13 +508,9 @@ def display_equity_curve(
         ascending=True,
     )
 
-    curve_df["Cumulative Profit/Loss"] = (
-        curve_df["Profit/Loss"].cumsum()
-    )
+    curve_df["Cumulative Profit/Loss"] = curve_df["Profit/Loss"].cumsum()
 
-    curve_df = curve_df.set_index(
-        "Exit Date"
-    )
+    curve_df = curve_df.set_index("Exit Date")
 
     st.subheader("📈 Realised Profit/Loss Curve")
 
@@ -628,10 +555,7 @@ def display_trade_history(
     filtered_df = journal_df.copy()
 
     if result_filter != "All":
-        filtered_df = filtered_df.loc[
-            filtered_df["Result"]
-            == result_filter
-        ]
+        filtered_df = filtered_df.loc[filtered_df["Result"] == result_filter]
 
     if ticker_filter.strip():
         filtered_df = filtered_df.loc[
@@ -693,11 +617,7 @@ def display_trade_history(
         },
     )
 
-    csv_data = filtered_df[
-        display_columns
-    ].to_csv(
-        index=False
-    )
+    csv_data = filtered_df[display_columns].to_csv(index=False)
 
     st.download_button(
         label="📥 Download Trade Journal",
@@ -711,9 +631,9 @@ def display_trade_history(
 
     trade_options = {
         (
-            f'{trade.get("ticker", "Unknown")} | '
-            f'{trade.get("exit_date", "")} | '
-            f'${float(trade.get("profit_loss", 0)):,.2f}'
+            f"{trade.get('ticker', 'Unknown')} | "
+            f"{trade.get('exit_date', '')} | "
+            f"${float(trade.get('profit_loss', 0)):,.2f}"
         ): trade.get("id")
         for trade in trades
     }
@@ -728,9 +648,7 @@ def display_trade_history(
         label="🗑 Delete Selected Trade",
         width="stretch",
     ):
-        trade_id = trade_options[
-            selected_trade_label
-        ]
+        trade_id = trade_options[selected_trade_label]
 
         deleted = delete_trade(
             trades,
@@ -742,9 +660,7 @@ def display_trade_history(
             st.rerun()
 
         else:
-            st.error(
-                "The trade could not be deleted."
-            )
+            st.error("The trade could not be deleted.")
 
 
 def display_trade_journal(
@@ -766,24 +682,16 @@ def display_trade_journal(
     st.divider()
 
     if not trades:
-        st.info(
-            "No completed trades have been recorded yet."
-        )
+        st.info("No completed trades have been recorded yet.")
         return
 
-    journal_df = trades_to_dataframe(
-        trades
-    )
+    journal_df = trades_to_dataframe(trades)
 
-    display_journal_metrics(
-        journal_df
-    )
+    display_journal_metrics(journal_df)
 
     st.divider()
 
-    display_equity_curve(
-        journal_df
-    )
+    display_equity_curve(journal_df)
 
     st.divider()
 

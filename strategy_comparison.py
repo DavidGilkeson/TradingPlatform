@@ -12,7 +12,6 @@ import streamlit as st
 
 from backtester import run_backtest
 
-
 DEFAULT_STRATEGIES = {
     "Fast Momentum — 5/20": {
         "short_window": 5,
@@ -73,17 +72,11 @@ def compare_strategies(
 
     strategies = strategies or DEFAULT_STRATEGIES
 
-    clean_open = _prepare_price_series(
-        open_prices
-    )
+    clean_open = _prepare_price_series(open_prices)
 
-    clean_close = _prepare_price_series(
-        close_prices
-    )
+    clean_close = _prepare_price_series(close_prices)
 
-    common_index = clean_open.index.intersection(
-        clean_close.index
-    )
+    common_index = clean_open.index.intersection(clean_close.index)
 
     clean_open = clean_open.loc[common_index]
     clean_close = clean_close.loc[common_index]
@@ -92,13 +85,9 @@ def compare_strategies(
     detailed_results = {}
 
     for strategy_name, settings in strategies.items():
-        short_window = int(
-            settings["short_window"]
-        )
+        short_window = int(settings["short_window"])
 
-        long_window = int(
-            settings["long_window"]
-        )
+        long_window = int(settings["long_window"])
 
         if short_window >= long_window:
             continue
@@ -106,13 +95,9 @@ def compare_strategies(
         if len(clean_close) < long_window:
             continue
 
-        ma_short = clean_close.rolling(
-            window=short_window
-        ).mean()
+        ma_short = clean_close.rolling(window=short_window).mean()
 
-        ma_long = clean_close.rolling(
-            window=long_window
-        ).mean()
+        ma_long = clean_close.rolling(window=long_window).mean()
 
         try:
             result = run_backtest(
@@ -181,9 +166,7 @@ def compare_strategies(
     if not summary_rows:
         return pd.DataFrame(), {}
 
-    results_df = pd.DataFrame(
-        summary_rows
-    )
+    results_df = pd.DataFrame(summary_rows)
 
     results_df = results_df.sort_values(
         by=[
@@ -194,9 +177,7 @@ def compare_strategies(
             False,
             False,
         ],
-    ).reset_index(
-        drop=True
-    )
+    ).reset_index(drop=True)
 
     results_df.insert(
         0,
@@ -232,37 +213,27 @@ def display_strategy_metrics(
 
     metric2.metric(
         label="Strategy Return",
-        value=(
-            f'{winner["Strategy Return (%)"]:.2f}%'
-        ),
+        value=(f"{winner['Strategy Return (%)']:.2f}%"),
     )
 
     metric3.metric(
         label="Outperformance",
-        value=(
-            f'{winner["Outperformance (%)"]:.2f}%'
-        ),
+        value=(f"{winner['Outperformance (%)']:.2f}%"),
     )
 
     metric4.metric(
         label="Win Rate",
-        value=(
-            f'{winner["Win Rate (%)"]:.1f}%'
-        ),
+        value=(f"{winner['Win Rate (%)']:.1f}%"),
     )
 
     metric5.metric(
         label="Maximum Drawdown",
-        value=(
-            f'{winner["Maximum Drawdown (%)"]:.1f}%'
-        ),
+        value=(f"{winner['Maximum Drawdown (%)']:.1f}%"),
     )
 
     metric6.metric(
         label="Completed Trades",
-        value=int(
-            winner["Number of Trades"]
-        ),
+        value=int(winner["Number of Trades"]),
     )
 
 
@@ -383,9 +354,7 @@ def display_equity_curve_comparison(
     equity_data = {}
 
     for strategy_name, result in detailed_results.items():
-        equity_curve = result.get(
-            "Equity Curve"
-        )
+        equity_curve = result.get("Equity Curve")
 
         if equity_curve is None:
             continue
@@ -411,19 +380,15 @@ def display_equity_curve_comparison(
         else:
             continue
 
-        equity_data[strategy_name] = (
-            pd.to_numeric(
-                equity_series,
-                errors="coerce",
-            )
+        equity_data[strategy_name] = pd.to_numeric(
+            equity_series,
+            errors="coerce",
         )
 
     if not equity_data:
         return
 
-    equity_df = pd.DataFrame(
-        equity_data
-    )
+    equity_df = pd.DataFrame(equity_data)
 
     st.subheader("📈 Equity Curve Comparison")
 
@@ -463,10 +428,7 @@ def display_custom_strategy_controls() -> dict:
     strategies = DEFAULT_STRATEGIES.copy()
 
     if short_window < long_window:
-        custom_name = (
-            f"Custom Strategy — "
-            f"{short_window}/{long_window}"
-        )
+        custom_name = f"Custom Strategy — {short_window}/{long_window}"
 
         strategies[custom_name] = {
             "short_window": short_window,
@@ -475,8 +437,7 @@ def display_custom_strategy_controls() -> dict:
 
     else:
         st.warning(
-            "The short moving average must be lower "
-            "than the long moving average."
+            "The short moving average must be lower than the long moving average."
         )
 
     return strategies
@@ -502,11 +463,7 @@ def display_strategy_comparison(
         "close",
     ]
 
-    missing_fields = [
-        field
-        for field in required_fields
-        if field not in selected_data
-    ]
+    missing_fields = [field for field in required_fields if field not in selected_data]
 
     if missing_fields:
         st.warning(
@@ -536,13 +493,11 @@ def display_strategy_comparison(
             f"Testing strategies on {ticker}...",
             show_time=True,
         ):
-            results_df, detailed_results = (
-                compare_strategies(
-                    open_prices=selected_data["open"],
-                    close_prices=selected_data["close"],
-                    starting_balance=starting_balance,
-                    strategies=strategies,
-                )
+            results_df, detailed_results = compare_strategies(
+                open_prices=selected_data["open"],
+                close_prices=selected_data["close"],
+                starting_balance=starting_balance,
+                strategies=strategies,
             )
 
         if results_df.empty:
@@ -553,69 +508,44 @@ def display_strategy_comparison(
             )
             return
 
-        st.session_state[
-            f"strategy_results_{ticker}"
-        ] = results_df
+        st.session_state[f"strategy_results_{ticker}"] = results_df
 
-        st.session_state[
-            f"strategy_details_{ticker}"
-        ] = detailed_results
+        st.session_state[f"strategy_details_{ticker}"] = detailed_results
 
-    results_df = st.session_state.get(
-        f"strategy_results_{ticker}"
-    )
+    results_df = st.session_state.get(f"strategy_results_{ticker}")
 
-    detailed_results = st.session_state.get(
-        f"strategy_details_{ticker}"
-    )
+    detailed_results = st.session_state.get(f"strategy_details_{ticker}")
 
     if results_df is None or results_df.empty:
         return
 
-    st.success(
-        f"{len(results_df)} strategies compared "
-        f"successfully for {ticker}."
-    )
+    st.success(f"{len(results_df)} strategies compared successfully for {ticker}.")
 
-    display_strategy_metrics(
-        results_df
-    )
+    display_strategy_metrics(results_df)
 
     st.divider()
 
-    chart_column, table_column = st.columns(
-        [1, 1.35]
-    )
+    chart_column, table_column = st.columns([1, 1.35])
 
     with chart_column:
-        display_strategy_chart(
-            results_df
-        )
+        display_strategy_chart(results_df)
 
     with table_column:
-        display_strategy_table(
-            results_df
-        )
+        display_strategy_table(results_df)
 
     if detailed_results:
         st.divider()
 
-        display_equity_curve_comparison(
-            detailed_results
-        )
+        display_equity_curve_comparison(detailed_results)
 
     st.divider()
 
-    csv_data = results_df.to_csv(
-        index=False
-    )
+    csv_data = results_df.to_csv(index=False)
 
     st.download_button(
         label="📥 Download Strategy Results",
         data=csv_data,
-        file_name=(
-            f"{ticker.lower()}_strategy_comparison.csv"
-        ),
+        file_name=(f"{ticker.lower()}_strategy_comparison.csv"),
         mime="text/csv",
         width="stretch",
         key=f"download_strategy_results_{ticker}",

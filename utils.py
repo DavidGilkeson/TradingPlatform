@@ -12,8 +12,6 @@ import pandas as pd
 import requests
 
 
-
-
 def create_folders():
     """Create the folders required by the application."""
 
@@ -35,14 +33,7 @@ def load_tickers_from_csv(file_path):
             print(f"Error: '{file_path}' requires a Ticker column.")
             return []
 
-        tickers = (
-            df["Ticker"]
-            .dropna()
-            .astype(str)
-            .str.strip()
-            .str.upper()
-            .tolist()
-        )
+        tickers = df["Ticker"].dropna().astype(str).str.strip().str.upper().tolist()
 
         return tickers
 
@@ -53,8 +44,6 @@ def load_tickers_from_csv(file_path):
     except Exception as error:
         print(f"Error reading backup ticker file: {error}")
         return []
-
-
 
 
 def download_sp500_tickers(url, backup_file):
@@ -70,17 +59,12 @@ def download_sp500_tickers(url, backup_file):
         # Identify the application making the request
         headers = {
             "User-Agent": (
-                "DavidTradingPlatform/1.0 "
-                "(personal Python learning project)"
+                "DavidTradingPlatform/1.0 (personal Python learning project)"
             )
         }
 
         # Download the webpage manually
-        response = requests.get(
-            url,
-            headers=headers,
-            timeout=20
-        )
+        response = requests.get(url, headers=headers, timeout=20)
 
         # Raise an error for HTTP responses such as 403 or 404
         response.raise_for_status()
@@ -93,28 +77,15 @@ def download_sp500_tickers(url, backup_file):
 
         # Extract and clean the ticker symbols
         tickers = (
-            sp500_table["Symbol"]
-            .dropna()
-            .astype(str)
-            .str.strip()
-            .str.upper()
-            .tolist()
+            sp500_table["Symbol"].dropna().astype(str).str.strip().str.upper().tolist()
         )
 
         # Yahoo Finance uses hyphens instead of periods
         # Example: BRK.B becomes BRK-B
-        tickers = [
-            ticker.replace(".", "-")
-            for ticker in tickers
-        ]
+        tickers = [ticker.replace(".", "-") for ticker in tickers]
 
         # Save the latest ticker list as a backup
-        pd.DataFrame({
-            "Ticker": tickers
-        }).to_csv(
-            backup_file,
-            index=False
-        )
+        pd.DataFrame({"Ticker": tickers}).to_csv(backup_file, index=False)
 
         print(f"Loaded {len(tickers)} S&P 500 ticker symbols.")
         print(f"Ticker backup saved to {backup_file}")

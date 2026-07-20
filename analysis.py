@@ -4,8 +4,6 @@ analysis.py
 Reusable stock-analysis UI components for Project Atlas.
 """
 
-import math
-
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
@@ -71,9 +69,7 @@ def _calculate_health_scores(stock):
     Build health scores from the available stock-analysis fields.
     """
 
-    overall_score = _clamp(
-        _safe_number(stock.get("Score", 0))
-    )
+    overall_score = _clamp(_safe_number(stock.get("Score", 0)))
 
     rsi = _safe_number(
         stock.get("RSI", 50),
@@ -95,9 +91,7 @@ def _calculate_health_scores(stock):
         )
     )
 
-    signal = str(
-        stock.get("Signal", "HOLD")
-    ).upper()
+    signal = str(stock.get("Signal", "HOLD")).upper()
 
     trend_score = overall_score
 
@@ -106,21 +100,13 @@ def _calculate_health_scores(stock):
     elif signal == "SELL":
         trend_score = min(trend_score, 35)
 
-    momentum_score = _clamp(
-        50 + strength
-    )
+    momentum_score = _clamp(50 + strength)
 
-    rsi_score = _clamp(
-        100 - abs(rsi - 50) * 2
-    )
+    rsi_score = _clamp(100 - abs(rsi - 50) * 2)
 
-    volume_score = _clamp(
-        volume_ratio * 50
-    )
+    volume_score = _clamp(volume_ratio * 50)
 
-    risk_score = _clamp(
-        abs(rsi - 50) * 2
-    )
+    risk_score = _clamp(abs(rsi - 50) * 2)
 
     return {
         "Trend": round(trend_score, 1),
@@ -136,17 +122,11 @@ def display_stock_summary(stock):
     Display the main stock heading and headline metrics.
     """
 
-    ticker = str(
-        stock.get("Ticker", "Unknown")
-    )
+    ticker = str(stock.get("Ticker", "Unknown"))
 
-    signal = str(
-        stock.get("Signal", "HOLD")
-    ).upper()
+    signal = str(stock.get("Signal", "HOLD")).upper()
 
-    score = _safe_number(
-        stock.get("Score", 0)
-    )
+    score = _safe_number(stock.get("Score", 0))
 
     confidence = stock.get(
         "Confidence",
@@ -177,10 +157,7 @@ def display_stock_summary(stock):
         value=str(confidence),
     )
 
-    st.markdown(
-        f"### {_score_to_stars(score)} "
-        f"{_get_rating_label(score)}"
-    )
+    st.markdown(f"### {_score_to_stars(score)} {_get_rating_label(score)}")
 
 
 def display_price_statistics(stock):
@@ -230,9 +207,7 @@ def display_price_statistics(stock):
 
     st.markdown("#### Price and Indicator Statistics")
 
-    columns = st.columns(
-        min(len(metric_values), 4)
-    )
+    columns = st.columns(min(len(metric_values), 4))
 
     for index, (label, value) in enumerate(metric_values):
         columns[index % len(columns)].metric(
@@ -252,10 +227,7 @@ def display_signal_strength(stock):
 
     for name, value in scores.items():
         if name == "Risk":
-            label = (
-                f"{name}: {value:.0f}% "
-                "(lower is better)"
-            )
+            label = f"{name}: {value:.0f}% (lower is better)"
         else:
             label = f"{name}: {value:.0f}%"
 
@@ -332,19 +304,13 @@ def display_reason_list(stock):
         ]
 
     elif isinstance(reasons, (list, tuple)):
-        reason_items = [
-            str(item).strip()
-            for item in reasons
-            if str(item).strip()
-        ]
+        reason_items = [str(item).strip() for item in reasons if str(item).strip()]
 
     else:
         reason_items = [str(reasons)]
 
     if not reason_items:
-        st.info(
-            "No detailed reasons are available."
-        )
+        st.info("No detailed reasons are available.")
         return
 
     for reason in reason_items:
@@ -356,13 +322,9 @@ def display_recommendation(stock):
     Display a simple recommendation summary.
     """
 
-    signal = str(
-        stock.get("Signal", "HOLD")
-    ).upper()
+    signal = str(stock.get("Signal", "HOLD")).upper()
 
-    score = _safe_number(
-        stock.get("Score", 0)
-    )
+    score = _safe_number(stock.get("Score", 0))
 
     rsi = _safe_number(
         stock.get("RSI", 50),
@@ -370,22 +332,13 @@ def display_recommendation(stock):
     )
 
     if signal == "BUY":
-        st.success(
-            f"Suggested action: BUY — "
-            f"Atlas score {score:.0f}/100."
-        )
+        st.success(f"Suggested action: BUY — Atlas score {score:.0f}/100.")
 
     elif signal == "SELL":
-        st.error(
-            f"Suggested action: SELL or AVOID — "
-            f"Atlas score {score:.0f}/100."
-        )
+        st.error(f"Suggested action: SELL or AVOID — Atlas score {score:.0f}/100.")
 
     else:
-        st.info(
-            f"Suggested action: HOLD or WATCH — "
-            f"Atlas score {score:.0f}/100."
-        )
+        st.info(f"Suggested action: HOLD or WATCH — Atlas score {score:.0f}/100.")
 
     if rsi >= 70:
         st.warning(
@@ -400,9 +353,7 @@ def display_recommendation(stock):
         )
 
     else:
-        st.caption(
-            "RSI is currently within a broadly neutral range."
-        )
+        st.caption("RSI is currently within a broadly neutral range.")
 
 
 def display_stock_analysis(stock):
@@ -414,9 +365,7 @@ def display_stock_analysis(stock):
 
     display_price_statistics(stock)
 
-    left_column, right_column = st.columns(
-        [1, 1]
-    )
+    left_column, right_column = st.columns([1, 1])
 
     with left_column:
         display_signal_strength(stock)

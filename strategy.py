@@ -1,10 +1,4 @@
-def calculate_score(
-    signal,
-    strength,
-    rsi,
-    volume,
-    average_volume
-):
+def calculate_score(signal, strength, rsi, volume, average_volume):
     score = 0
     reasons = []
 

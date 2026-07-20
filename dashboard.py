@@ -15,9 +15,7 @@ def _validate_columns(df: pd.DataFrame, required_columns: list[str]) -> bool:
     """
 
     missing_columns = [
-        column
-        for column in required_columns
-        if column not in df.columns
+        column for column in required_columns if column not in df.columns
     ]
 
     if missing_columns:
@@ -44,12 +42,7 @@ def display_market_breadth(df: pd.DataFrame) -> None:
         st.info("No market data is available.")
         return
 
-    signal_counts = (
-        df["Signal"]
-        .astype(str)
-        .str.upper()
-        .value_counts()
-    )
+    signal_counts = df["Signal"].astype(str).str.upper().value_counts()
 
     buy_count = int(signal_counts.get("BUY", 0))
     hold_count = int(signal_counts.get("HOLD", 0))
@@ -130,10 +123,7 @@ def display_signal_breakdown(df: pd.DataFrame) -> None:
         textposition="inside",
         textinfo="label+percent+value",
         hovertemplate=(
-            "<b>%{label}</b><br>"
-            "Stocks: %{value}<br>"
-            "Share: %{percent}"
-            "<extra></extra>"
+            "<b>%{label}</b><br>Stocks: %{value}<br>Share: %{percent}<extra></extra>"
         ),
     )
 
@@ -169,9 +159,7 @@ def display_score_distribution(df: pd.DataFrame) -> None:
         errors="coerce",
     )
 
-    score_data = score_data.dropna(
-        subset=["Score"]
-    )
+    score_data = score_data.dropna(subset=["Score"])
 
     if score_data.empty:
         st.info("No valid score information is available.")
@@ -205,11 +193,7 @@ def display_score_distribution(df: pd.DataFrame) -> None:
     )
 
     figure.update_traces(
-        hovertemplate=(
-            "Score range: %{x}<br>"
-            "Stocks: %{y}"
-            "<extra></extra>"
-        )
+        hovertemplate=("Score range: %{x}<br>Stocks: %{y}<extra></extra>")
     )
 
     st.plotly_chart(
@@ -237,11 +221,7 @@ def _prepare_ranked_table(
         "Reasons",
     ]
 
-    available_columns = [
-        column
-        for column in preferred_columns
-        if column in df.columns
-    ]
+    available_columns = [column for column in preferred_columns if column in df.columns]
 
     ranked_df = (
         df.sort_values(
