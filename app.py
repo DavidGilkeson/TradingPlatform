@@ -11,7 +11,7 @@ Features:
 - Professional stock analysis report
 - Interactive Plotly charts
 - Moving-average strategy backtesting
-- Persistent watchlist
+- Persistent watchlist 
 - Persistent portfolio tracker
 - Editable favourites
 - CSV export
@@ -51,8 +51,13 @@ from watchlist import (
     remove_stock,
     replace_watchlist,
 )
-
-
+from trade_journal import (
+    display_trade_journal,
+    load_trade_journal,
+)
+from strategy_comparison import (
+    display_strategy_comparison,
+)
 # --------------------------------------------------
 # Page configuration
 # --------------------------------------------------
@@ -75,6 +80,7 @@ st.caption(
 # --------------------------------------------------
 watchlist = load_watchlist()
 portfolio = load_portfolio()
+trade_journal = load_trade_journal()
 cache_status = get_cache_status()
 
 
@@ -356,11 +362,19 @@ if "scan_results" in st.session_state:
     # --------------------------------------------------
     # Main navigation
     # --------------------------------------------------
-    market_tab, analysis_tab, portfolio_tab = st.tabs(
+    (
+        market_tab,
+        analysis_tab,
+        portfolio_tab,
+        journal_tab,
+        strategy_tab,
+    ) = st.tabs(
         [
             "📊 Market",
             "🔎 Stock Analysis",
             "💼 Portfolio",
+            "📓 Trade Journal",
+            "🧪 Strategy Lab",
         ]
     )
 
@@ -839,6 +853,55 @@ if "scan_results" in st.session_state:
             portfolio=portfolio,
             df=df,
         )
+    # ==================================================
+    # TRADE JOURNAL TAB
+    # ==================================================
+    with journal_tab:
+        display_trade_journal(
+            trades=trade_journal,
+        )
+    # ==================================================
+    # STRATEGY COMPARISON TAB
+    # ==================================================
+    with strategy_tab:
+        st.header("Strategy Lab")
+
+        if filtered_df.empty:
+            st.warning(
+                "No stocks match the current sidebar filters. "
+                "Adjust the filters before comparing strategies."
+            )
+
+        else:
+            strategy_tickers = (
+                filtered_df["Ticker"]
+                .astype(str)
+                .tolist()
+            )
+
+            strategy_ticker = st.selectbox(
+                label="Select a stock",
+                options=strategy_tickers,
+                index=0,
+                key="strategy_comparison_ticker",
+            )
+
+            strategy_data = chart_data.get(
+                strategy_ticker
+            )
+
+            if strategy_data is None:
+                st.warning(
+                    f"Historical price data is unavailable "
+                    f"for {strategy_ticker}."
+                )
+
+            else:
+                display_strategy_comparison(
+                    ticker=strategy_ticker,
+                    selected_data=strategy_data,
+                )
+    
 
 else:
     st.info(
