@@ -52,13 +52,13 @@ from ui_components import (
     display_opportunities_editor,
 )
 from utils import download_sp500_tickers
+from opportunity_center import display_opportunity_center
 from watchlist import (
     add_stock,
     load_watchlist,
     remove_stock,
     replace_watchlist,
 )
-
 # --------------------------------------------------
 # Page configuration
 # --------------------------------------------------
@@ -338,6 +338,7 @@ if "scan_results" in st.session_state:
     # --------------------------------------------------
     (
         market_tab,
+        opportunity_tab,
         analysis_tab,
         portfolio_tab,
         journal_tab,
@@ -345,6 +346,7 @@ if "scan_results" in st.session_state:
     ) = st.tabs(
         [
             "📊 Market",
+            "🎯 Opportunity Centre",
             "🔎 Stock Analysis",
             "💼 Portfolio",
             "📓 Trade Journal",
@@ -764,7 +766,11 @@ if "scan_results" in st.session_state:
                     ticker=strategy_ticker,
                     selected_data=strategy_data,
                 )
-
+    # ==================================================
+    # OPPORTUNITY CENTRE TAB
+    # ==================================================
+    with opportunity_tab:
+        display_opportunity_center(df)
 
 else:
     st.info("Use the sidebar and press **Scan Market** to begin.")

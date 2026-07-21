@@ -3,11 +3,105 @@ analysis.py
 
 Reusable stock-analysis UI components for Project Atlas.
 """
+from decision_engine import evaluate_stock
 
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
+
+def display_atlas_decision(
+    stock_metrics: dict,
+) -> None:
+    """
+    Display the structured Atlas decision for one stock.
+    """
+
+    decision = evaluate_stock(
+        stock_metrics
+    )
+
+    st.subheader("🧠 Atlas Decision")
+
+    score_column, grade_column, verdict_column = (
+        st.columns(3)
+    )
+
+    score_column.metric(
+        label="Atlas Rating",
+        value=f'{decision["score"]:.1f}/100',
+    )
+
+    grade_column.metric(
+        label="Opportunity Grade",
+        value=decision["grade"],
+    )
+
+    verdict_column.metric(
+        label="Verdict",
+        value=decision["verdict"],
+    )
+
+    st.markdown(
+        f"### {decision['star_display']} "
+        f"{decision['confidence']} Confidence"
+    )
+
+    st.progress(
+        int(decision["score"]),
+        text=(
+            f"Atlas confidence score: "
+            f"{decision['score']:.1f}%"
+        ),
+    )
+
+    st.divider()
+
+    strengths_column, weaknesses_column = (
+        st.columns(2)
+    )
+
+    with strengths_column:
+        st.markdown("#### ✅ Strengths")
+
+        for strength in decision["strengths"]:
+            st.write(f"• {strength}")
+
+    with weaknesses_column:
+        st.markdown("#### ⚠️ Weaknesses")
+
+        for weakness in decision["weaknesses"]:
+            st.write(f"• {weakness}")
+
+    st.divider()
+
+    st.markdown("#### Score Breakdown")
+
+    for category, details in decision[
+        "breakdown"
+    ].items():
+        points = details["points"]
+        maximum = details["maximum_points"]
+
+        percentage = (
+            points / maximum * 100
+            if maximum > 0
+            else 0
+        )
+
+        st.write(
+            f"**{category}:** "
+            f"{points:.1f} / {maximum:.0f}"
+        )
+
+        st.progress(
+            int(
+                max(
+                    0,
+                    min(percentage, 100),
+                )
+            )
+        )
 
 def _safe_number(value, default=0.0):
     """
@@ -383,3 +477,9 @@ def display_stock_analysis(stock):
     display_recommendation(stock)
 
     display_reason_list(stock)
+    
+    display_atlas_decision(
+    stock_metrics=stock,
+)
+
+    st.divider()
