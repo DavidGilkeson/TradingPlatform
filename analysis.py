@@ -3,6 +3,7 @@ analysis.py
 
 Reusable stock-analysis UI components for Project Atlas.
 """
+from atlas_intelligence import display_atlas_intelligence
 from decision_engine import evaluate_stock
 
 import pandas as pd
@@ -474,12 +475,18 @@ def display_stock_analysis(stock):
             width="stretch",
         )
 
+    st.divider()
+
     display_recommendation(stock)
 
     display_reason_list(stock)
-    
-    display_atlas_decision(
-    stock_metrics=stock,
-)
 
     st.divider()
+
+    display_atlas_decision(
+        stock_metrics=stock,
+    )
+
+    st.divider()
+
+    display_atlas_intelligence(stock)
