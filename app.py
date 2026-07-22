@@ -52,6 +52,10 @@ from ui_components import (
     display_opportunities_editor,
 )
 from utils import download_sp500_tickers
+from historical_scans import (
+    display_historical_trends,
+    save_historical_scan,
+)
 from opportunity_center import display_opportunity_center
 from watchlist import (
     add_stock,
@@ -273,6 +277,21 @@ if run_scanner:
         st.session_state["data_source"] = "live"
         st.session_state["cache_age_seconds"] = 0
 
+        try:
+            historical_scan_id = save_historical_scan(
+                df=df,
+                scan_duration_seconds=scan_time,
+            )
+
+            if historical_scan_id is not None:
+                st.session_state["historical_scan_id"] = historical_scan_id
+
+        except Exception as error:
+            st.warning(
+                "The scan completed, but Atlas could not save the historical "
+                f"snapshot: {error}"
+            )
+
         if not cache_saved:
             st.warning("The scan completed, but Atlas could not save the market cache.")
 
@@ -339,6 +358,7 @@ if "scan_results" in st.session_state:
     (
         market_tab,
         opportunity_tab,
+        trends_tab,
         analysis_tab,
         portfolio_tab,
         journal_tab,
@@ -347,6 +367,7 @@ if "scan_results" in st.session_state:
         [
             "📊 Market",
             "🎯 Opportunity Centre",
+            "🕒 Atlas Trends",
             "🔎 Stock Analysis",
             "💼 Portfolio",
             "📓 Trade Journal",
@@ -485,6 +506,12 @@ if "scan_results" in st.session_state:
                 mime="text/csv",
                 width="stretch",
             )
+
+    # ==================================================
+    # ATLAS TRENDS TAB
+    # ==================================================
+    with trends_tab:
+        display_historical_trends(current_df=df)
 
     # ==================================================
     # STOCK ANALYSIS TAB
