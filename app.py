@@ -52,6 +52,10 @@ from ui_components import (
     display_opportunities_editor,
 )
 from utils import download_sp500_tickers
+from alert_engine import (
+    display_alert_center,
+    generate_and_store_alerts,
+)
 from historical_scans import (
     display_historical_trends,
     save_historical_scan,
@@ -286,6 +290,13 @@ if run_scanner:
             if historical_scan_id is not None:
                 st.session_state["historical_scan_id"] = historical_scan_id
 
+                generated_alert_count = generate_and_store_alerts(
+                    historical_scan_id
+                )
+                st.session_state["generated_alert_count"] = (
+                    generated_alert_count
+                )
+
         except Exception as error:
             st.warning(
                 "The scan completed, but Atlas could not save the historical "
@@ -358,6 +369,7 @@ if "scan_results" in st.session_state:
     (
         market_tab,
         opportunity_tab,
+        alerts_tab,
         trends_tab,
         analysis_tab,
         portfolio_tab,
@@ -367,6 +379,7 @@ if "scan_results" in st.session_state:
         [
             "📊 Market",
             "🎯 Opportunity Centre",
+            "🔔 Alerts",
             "🕒 Atlas Trends",
             "🔎 Stock Analysis",
             "💼 Portfolio",
@@ -506,6 +519,12 @@ if "scan_results" in st.session_state:
                 mime="text/csv",
                 width="stretch",
             )
+
+    # ==================================================
+    # ALERT CENTRE TAB
+    # ==================================================
+    with alerts_tab:
+        display_alert_center()
 
     # ==================================================
     # ATLAS TRENDS TAB
