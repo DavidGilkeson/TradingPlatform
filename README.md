@@ -1,14 +1,43 @@
-# TradingPlatform
-# Trading Platform  A modular Python trading platform that analyzes stock market data using the Yahoo Finance API. The application scans multiple stocks, calculates technical indicators such as moving averages, ranks trading opportunities, generates BUY/SELL signals, exports results to CSV, and displays interactive stock charts. Built as a hands-on software engineering project to demonstrate Python programming, data analysis, modular application design, and algorithmic trading concepts.  **Technologies:** Python, Pandas, Matplotlib, yFinance
+# Atlas Strategy Framework — Sprint 28.1
 
+This package introduces a modular strategy architecture for Project Atlas.
 
-✅ Initial project setup
-✅ Build modular trading platform
-✅ Add S&P 500 ticker downloader
-✅ Optimize scanner with batch downloads
-✅ Add RSI indicator and scoring engine
-✅ Add volume analysis and enhanced scoring engine
-✅ Add confidence ratings to trading signals
-✅ Build Project Atlas dashboard
-✅ Enhance dashboard with filters and opportunity insights
-✅ Polish Streamlit dashboard and improve UX
+Included strategies:
+
+- Moving Average Cross
+- RSI Pullback
+- Momentum
+- Atlas Composite
+
+It also includes:
+
+- a common `BaseStrategy` interface
+- a standard `StrategyResult`
+- a central strategy registry
+- strategy loading helpers
+- a reusable Streamlit component
+- unit tests
+- integration documentation
+
+## Install test dependencies
+
+```bash
+pip install pandas numpy pytest
+```
+
+## Run tests
+
+```bash
+pytest tests/test_strategy_framework.py -v
+```
+
+## Copy into Atlas
+
+Copy these into the root of the Atlas repository:
+
+```text
+strategies/
+strategy_framework_ui.py
+tests/test_strategy_framework.py
+docs/strategy-framework.md
+```

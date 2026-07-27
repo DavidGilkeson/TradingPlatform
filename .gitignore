@@ -7,3 +7,9 @@ charts/
 .agents\skills/developing-with-streamlit/
 cache/
 portfolio.json
+*.py[cod]
+cache/*.pkl
+watchlist.json
+.streamlit/secrets.toml
+trade_journal.json
+
