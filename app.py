@@ -61,6 +61,7 @@ from historical_scans import (
     save_historical_scan,
 )
 from opportunity_center import display_opportunity_center
+from paper_trading_ui import display_paper_trading_dashboard
 from watchlist import (
     add_stock,
     load_watchlist,
@@ -373,6 +374,7 @@ if "scan_results" in st.session_state:
         trends_tab,
         analysis_tab,
         portfolio_tab,
+        paper_tab,
         journal_tab,
         strategy_tab,
     ) = st.tabs(
@@ -383,6 +385,7 @@ if "scan_results" in st.session_state:
             "🕒 Atlas Trends",
             "🔎 Stock Analysis",
             "💼 Portfolio",
+            "💰 Paper Trading",
             "📓 Trade Journal",
             "🧪 Strategy Lab",
         ]
@@ -771,6 +774,14 @@ if "scan_results" in st.session_state:
             portfolio=portfolio,
             df=df,
         )
+    # ==================================================
+    # PAPER TRADING TAB
+    # ==================================================
+    with paper_tab:
+        display_paper_trading_dashboard(
+            db_path="data/paper_trading.db",
+        )
+
     # ==================================================
     # TRADE JOURNAL TAB
     # ==================================================
