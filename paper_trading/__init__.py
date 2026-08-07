@@ -16,3 +16,7 @@ __all__ = [
     "PaperTradingDatabase",
     "PaperTradingRepository",
 ]
+
+from .portfolio_analytics import PortfolioAnalytics, build_positions_frame, calculate_portfolio_analytics, get_position_details
+
+__all__ += ["PortfolioAnalytics","build_positions_frame","calculate_portfolio_analytics","get_position_details"]
