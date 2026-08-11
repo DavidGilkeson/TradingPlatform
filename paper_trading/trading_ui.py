@@ -8,6 +8,10 @@ import pandas as pd
 import streamlit as st
 
 from .account import PaperAccountService
+from .one_click import (
+    clear_paper_trade_intent,
+    consume_paper_trade_intent,
+)
 from .orders import PaperOrderService
 
 
@@ -70,9 +74,22 @@ def display_order_ticket(
             market_df["Ticker"].dropna().astype(str).str.upper().unique().tolist()
         )
 
+    intent = consume_paper_trade_intent()
+    intent_ticker = intent.get("ticker") if intent else None
+
+    if intent_ticker and intent_ticker not in tickers:
+        tickers = [intent_ticker] + tickers
+
+    ticker_options = tickers or ["AAPL"]
+
+    default_index = 0
+    if intent_ticker and intent_ticker in ticker_options:
+        default_index = ticker_options.index(intent_ticker)
+
     ticker = st.selectbox(
         "Ticker",
-        options=tickers or ["AAPL"],
+        options=ticker_options,
+        index=default_index,
         key="paper_order_ticker",
     )
 
@@ -123,17 +140,30 @@ def display_order_ticket(
         ) / 100
 
     with ticket_col:
+        default_side = (
+            intent.get("side", "BUY")
+            if intent
+            else "BUY"
+        )
+
         side = st.radio(
             "Side",
             ["BUY", "SELL"],
+            index=0 if default_side == "BUY" else 1,
             horizontal=True,
             key="paper_order_side",
+        )
+
+        default_shares = (
+            float(intent.get("shares", 1.0))
+            if intent
+            else 1.0
         )
 
         shares = st.number_input(
             "Shares",
             min_value=0.0001,
-            value=1.0,
+            value=max(default_shares, 0.0001),
             step=1.0,
             format="%.4f",
             key="paper_order_shares",
@@ -148,14 +178,25 @@ def display_order_ticket(
             key=f"paper_market_price_{ticker}",
         )
 
+        default_reason = (
+            str(intent.get("reason", ""))
+            if intent
+            else str(context.get("Atlas Verdict", ""))
+        )
+
         reason = st.text_input(
             "Trade reason",
-            value=str(context.get("Atlas Verdict", "")),
+            value=default_reason,
             placeholder="Example: Atlas Strong Buy",
             key="paper_trade_reason",
         )
         notes = st.text_area(
             "Notes",
+            value=(
+                str(intent.get("notes", ""))
+                if intent
+                else ""
+            ),
             placeholder="Why are you taking this trade?",
             key="paper_trade_notes",
         )
@@ -189,6 +230,12 @@ def display_order_ticket(
             "I understand this is a simulated paper order.",
             key="paper_order_confirmation",
         )
+
+        if intent:
+            st.info(
+                f"Queued from Atlas: **{intent.get('ticker')}** · "
+                f"{intent.get('reason') or 'Paper trade'}"
+            )
 
         if st.button(
             f"Place Paper {side}",
@@ -229,6 +276,8 @@ def display_order_ticket(
             except ValueError as error:
                 st.error(str(error))
             else:
+                clear_paper_trade_intent()
+
                 st.success(
                     f"{execution.side} filled: {execution.shares:g} "
                     f"{execution.ticker} @ ${execution.filled_price:,.2f}"
