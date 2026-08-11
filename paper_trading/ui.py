@@ -3,6 +3,7 @@ import pandas as pd
 import streamlit as st
 from .account import PaperAccountService
 from .journal_ui import display_paper_journal_dashboard
+from .performance_ui import display_performance_dashboard
 from .portfolio_ui import display_live_portfolio_dashboard
 from .trading_ui import display_order_history, display_order_ticket
 
