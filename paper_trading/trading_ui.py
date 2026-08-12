@@ -13,6 +13,7 @@ from .one_click import (
     consume_paper_trade_intent,
 )
 from .orders import PaperOrderService
+from .risk_manager import calculate_position_size, validate_order_risk
 
 
 def _latest_price(
@@ -184,6 +185,137 @@ def display_order_ticket(
             else str(context.get("Atlas Verdict", ""))
         )
 
+
+st.markdown("#### 🛡️ Risk Controls")
+
+risk_col1, risk_col2, risk_col3 = st.columns(3)
+
+with risk_col1:
+    risk_pct = st.number_input(
+        "Risk per trade (%)",
+        min_value=0.1,
+        max_value=10.0,
+        value=1.0,
+        step=0.1,
+        key="paper_risk_pct",
+    )
+
+with risk_col2:
+    max_position_pct = st.number_input(
+        "Max position (%)",
+        min_value=1.0,
+        max_value=100.0,
+        value=20.0,
+        step=1.0,
+        key="paper_risk_max_position",
+    )
+
+with risk_col3:
+    minimum_rr = st.number_input(
+        "Min reward/risk",
+        min_value=0.5,
+        max_value=10.0,
+        value=2.0,
+        step=0.25,
+        key="paper_risk_min_rr",
+    )
+
+default_stop = max(0.01, market_price * 0.95)
+default_target = market_price * 1.10
+
+stop_price = st.number_input(
+    "Stop-loss price",
+    min_value=0.01,
+    value=float(default_stop),
+    step=0.01,
+    format="%.2f",
+    key="paper_risk_stop",
+)
+
+target_price = st.number_input(
+    "Take-profit target",
+    min_value=0.01,
+    value=float(default_target),
+    step=0.01,
+    format="%.2f",
+    key="paper_risk_target",
+)
+
+risk_plan = None
+risk_decision = None
+
+if side == "BUY":
+    try:
+        snapshot = account_service.snapshot(persist=False)
+
+        risk_plan = calculate_position_size(
+            account_equity=float(snapshot.equity),
+            entry_price=float(market_price),
+            stop_price=float(stop_price),
+            target_price=float(target_price),
+            risk_pct=float(risk_pct),
+            max_position_pct=float(max_position_pct),
+        )
+
+        risk_decision = validate_order_risk(
+            account_equity=float(snapshot.equity),
+            cash=float(account.cash),
+            shares=float(shares),
+            entry_price=float(market_price),
+            stop_price=float(stop_price),
+            target_price=float(target_price),
+            risk_pct_limit=float(risk_pct),
+            max_position_pct=float(max_position_pct),
+            minimum_reward_risk=float(minimum_rr),
+        )
+
+    except ValueError as error:
+        st.error(str(error))
+
+    else:
+        risk_metrics = st.columns(4)
+
+        risk_metrics[0].metric(
+            "Suggested Shares",
+            f"{risk_plan.recommended_shares:,}",
+        )
+        risk_metrics[1].metric(
+            "Max $ Risk",
+            f"${risk_plan.max_risk_amount:,.2f}",
+        )
+        risk_metrics[2].metric(
+            "Risk / Share",
+            f"${risk_plan.risk_per_share:,.2f}",
+        )
+        risk_metrics[3].metric(
+            "Reward / Risk",
+            "—"
+            if risk_plan.reward_risk_ratio is None
+            else f"{risk_plan.reward_risk_ratio:.2f}:1",
+        )
+
+        if risk_plan.recommended_shares > 0:
+            if st.button(
+                "Use Suggested Position Size",
+                key="paper_use_risk_size",
+                width="stretch",
+            ):
+                st.session_state["paper_order_shares"] = float(
+                    risk_plan.recommended_shares
+                )
+                st.rerun()
+
+        if risk_decision.allowed:
+            st.success(
+                "Risk check passed for this simulated BUY order."
+            )
+        else:
+            for blocker in risk_decision.blockers:
+                st.error(blocker)
+
+        for warning in risk_decision.warnings:
+            st.warning(warning)
+
         reason = st.text_input(
             "Trade reason",
             value=default_reason,
@@ -237,11 +369,19 @@ def display_order_ticket(
                 f"{intent.get('reason') or 'Paper trade'}"
             )
 
+        risk_blocked = (
+            side == "BUY"
+            and (
+                risk_decision is None
+                or not risk_decision.allowed
+            )
+        )
+
         if st.button(
             f"Place Paper {side}",
             type="primary",
             width="stretch",
-            disabled=not confirmed,
+            disabled=(not confirmed) or risk_blocked,
             key="place_paper_order",
         ):
             order_service = PaperOrderService(

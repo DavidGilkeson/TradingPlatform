@@ -1,15 +1,9 @@
-# Project Atlas — Sprint 30.1
+# Project Atlas — Sprint 30.2
 
-Sprint 29 Paper Trading remains intact.
+Sprint 29 remains complete.
 
-Sprint 30 begins with the Atlas Risk Manager:
+Sprint 30 now includes:
+- 30.1 Atlas Risk Manager
+- 30.2 Risk-Enforced Paper Order Ticket
 
-- risk-per-trade sizing
-- stop-loss planning
-- take-profit planning
-- reward/risk ratio
-- maximum position exposure
-- cash checks
-- pre-trade blockers and warnings
-
-Next: enforce Risk Manager rules directly in the paper order ticket.
+The simulated BUY ticket now validates risk before allowing an order.
