@@ -217,3 +217,136 @@ def validate_new_position_against_exposure(
     projected_pct = projected_value / account_equity * 100.0
 
     return projected_pct <= max_total_exposure_pct, projected_pct
+
+
+@dataclass(slots=True)
+class ProposedTradeGuardrailStatus:
+    """Projected portfolio guardrail result for a proposed BUY."""
+
+    allowed: bool
+    projected_exposure_pct: float
+    projected_open_positions: int
+    blockers: list[str]
+    warnings: list[str]
+
+
+def evaluate_proposed_buy_guardrails(
+    service,
+    *,
+    ticker: str,
+    proposed_position_value: float,
+    settings: GuardrailSettings | None = None,
+    trading_date: date | None = None,
+) -> ProposedTradeGuardrailStatus:
+    """Evaluate portfolio guardrails after hypothetically adding a BUY."""
+
+    settings = settings or GuardrailSettings()
+    current = evaluate_portfolio_guardrails(
+        service,
+        settings=settings,
+        trading_date=trading_date,
+    )
+
+    snapshot = service.snapshot(persist=False)
+    positions = build_positions_frame(service)
+
+    if positions is None or positions.empty:
+        current_exposure_value = 0.0
+        existing_tickers: set[str] = set()
+    else:
+        value_column = next(
+            (
+                column
+                for column in (
+                    "Market Value",
+                    "market_value",
+                    "Position Value",
+                    "position_value",
+                )
+                if column in positions.columns
+            ),
+            None,
+        )
+
+        current_exposure_value = (
+            float(
+                pd.to_numeric(
+                    positions[value_column],
+                    errors="coerce",
+                ).fillna(0.0).sum()
+            )
+            if value_column
+            else 0.0
+        )
+
+        existing_tickers = set(
+            positions["Ticker"]
+            .astype(str)
+            .str.upper()
+            .str.strip()
+            .tolist()
+        )
+
+    ticker = str(ticker).upper().strip()
+    is_existing_position = ticker in existing_tickers
+
+    # Rebuild blockers instead of blindly inheriting the current
+    # open-position blocker. Adding to an existing ticker should not be
+    # blocked merely because the portfolio is already at its position-count
+    # limit.
+    blockers = [
+        blocker
+        for blocker in current.blockers
+        if not (
+            is_existing_position
+            and "positions are already open" in blocker
+        )
+    ]
+    warnings = list(current.warnings)
+
+    allowed_exposure, projected_exposure_pct = (
+        validate_new_position_against_exposure(
+            account_equity=float(snapshot.equity),
+            current_exposure_value=current_exposure_value,
+            proposed_position_value=float(proposed_position_value),
+            max_total_exposure_pct=float(
+                settings.max_total_exposure_pct
+            ),
+        )
+    )
+
+    projected_open_positions = current.open_positions
+    if ticker and not is_existing_position:
+        projected_open_positions += 1
+
+    if not allowed_exposure:
+        blockers.append(
+            f"Projected portfolio exposure would be "
+            f"{projected_exposure_pct:.1f}%, above the "
+            f"{settings.max_total_exposure_pct:.1f}% limit."
+        )
+
+    if projected_open_positions > settings.max_open_positions:
+        blockers.append(
+            f"This trade would increase open positions to "
+            f"{projected_open_positions}, above the "
+            f"{settings.max_open_positions} position limit."
+        )
+
+    if (
+        allowed_exposure
+        and projected_exposure_pct
+        >= settings.max_total_exposure_pct * 0.9
+    ):
+        warnings.append(
+            "This trade would leave portfolio exposure within 10% "
+            "of the maximum limit."
+        )
+
+    return ProposedTradeGuardrailStatus(
+        allowed=not blockers,
+        projected_exposure_pct=projected_exposure_pct,
+        projected_open_positions=projected_open_positions,
+        blockers=blockers,
+        warnings=warnings,
+    )

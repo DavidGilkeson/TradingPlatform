@@ -13,6 +13,10 @@ from .one_click import (
     consume_paper_trade_intent,
 )
 from .orders import PaperOrderService
+from .portfolio_guardrails import (
+    GuardrailSettings,
+    evaluate_proposed_buy_guardrails,
+)
 from .risk_manager import calculate_position_size, validate_order_risk
 
 
@@ -57,12 +61,18 @@ def _stock_context(
     return rows.iloc[0].to_dict() if not rows.empty else {}
 
 
+def _apply_suggested_shares(value: float) -> None:
+    """Safely update the Shares widget from a Streamlit callback."""
+
+    st.session_state["paper_order_shares"] = float(value)
+
+
 def display_order_ticket(
     *,
     market_df: pd.DataFrame | None = None,
     db_path: str = "data/paper_trading.db",
 ) -> None:
-    """Display a market order ticket and execution history."""
+    """Display a market order ticket with risk controls."""
 
     st.subheader("🛒 Paper Order Ticket")
 
@@ -70,9 +80,18 @@ def display_order_ticket(
     account = account_service.initialise_account()
 
     tickers: list[str] = []
-    if market_df is not None and not market_df.empty and "Ticker" in market_df.columns:
+    if (
+        market_df is not None
+        and not market_df.empty
+        and "Ticker" in market_df.columns
+    ):
         tickers = sorted(
-            market_df["Ticker"].dropna().astype(str).str.upper().unique().tolist()
+            market_df["Ticker"]
+            .dropna()
+            .astype(str)
+            .str.upper()
+            .unique()
+            .tolist()
         )
 
     intent = consume_paper_trade_intent()
@@ -185,136 +204,214 @@ def display_order_ticket(
             else str(context.get("Atlas Verdict", ""))
         )
 
+        risk_plan = None
+        risk_decision = None
 
-st.markdown("#### 🛡️ Risk Controls")
+        if side == "BUY":
+            st.markdown("#### 🛡️ Risk Controls")
 
-risk_col1, risk_col2, risk_col3 = st.columns(3)
+            risk_col1, risk_col2, risk_col3 = st.columns(3)
 
-with risk_col1:
-    risk_pct = st.number_input(
-        "Risk per trade (%)",
-        min_value=0.1,
-        max_value=10.0,
-        value=1.0,
-        step=0.1,
-        key="paper_risk_pct",
-    )
-
-with risk_col2:
-    max_position_pct = st.number_input(
-        "Max position (%)",
-        min_value=1.0,
-        max_value=100.0,
-        value=20.0,
-        step=1.0,
-        key="paper_risk_max_position",
-    )
-
-with risk_col3:
-    minimum_rr = st.number_input(
-        "Min reward/risk",
-        min_value=0.5,
-        max_value=10.0,
-        value=2.0,
-        step=0.25,
-        key="paper_risk_min_rr",
-    )
-
-default_stop = max(0.01, market_price * 0.95)
-default_target = market_price * 1.10
-
-stop_price = st.number_input(
-    "Stop-loss price",
-    min_value=0.01,
-    value=float(default_stop),
-    step=0.01,
-    format="%.2f",
-    key="paper_risk_stop",
-)
-
-target_price = st.number_input(
-    "Take-profit target",
-    min_value=0.01,
-    value=float(default_target),
-    step=0.01,
-    format="%.2f",
-    key="paper_risk_target",
-)
-
-risk_plan = None
-risk_decision = None
-
-if side == "BUY":
-    try:
-        snapshot = account_service.snapshot(persist=False)
-
-        risk_plan = calculate_position_size(
-            account_equity=float(snapshot.equity),
-            entry_price=float(market_price),
-            stop_price=float(stop_price),
-            target_price=float(target_price),
-            risk_pct=float(risk_pct),
-            max_position_pct=float(max_position_pct),
-        )
-
-        risk_decision = validate_order_risk(
-            account_equity=float(snapshot.equity),
-            cash=float(account.cash),
-            shares=float(shares),
-            entry_price=float(market_price),
-            stop_price=float(stop_price),
-            target_price=float(target_price),
-            risk_pct_limit=float(risk_pct),
-            max_position_pct=float(max_position_pct),
-            minimum_reward_risk=float(minimum_rr),
-        )
-
-    except ValueError as error:
-        st.error(str(error))
-
-    else:
-        risk_metrics = st.columns(4)
-
-        risk_metrics[0].metric(
-            "Suggested Shares",
-            f"{risk_plan.recommended_shares:,}",
-        )
-        risk_metrics[1].metric(
-            "Max $ Risk",
-            f"${risk_plan.max_risk_amount:,.2f}",
-        )
-        risk_metrics[2].metric(
-            "Risk / Share",
-            f"${risk_plan.risk_per_share:,.2f}",
-        )
-        risk_metrics[3].metric(
-            "Reward / Risk",
-            "—"
-            if risk_plan.reward_risk_ratio is None
-            else f"{risk_plan.reward_risk_ratio:.2f}:1",
-        )
-
-        if risk_plan.recommended_shares > 0:
-            if st.button(
-                "Use Suggested Position Size",
-                key="paper_use_risk_size",
-                width="stretch",
-            ):
-                st.session_state["paper_order_shares"] = float(
-                    risk_plan.recommended_shares
+            with risk_col1:
+                risk_pct = st.number_input(
+                    "Risk per trade (%)",
+                    min_value=0.1,
+                    max_value=10.0,
+                    value=1.0,
+                    step=0.1,
+                    key="paper_risk_pct",
                 )
-                st.rerun()
 
-        if risk_decision.allowed:
-            st.success(
-                "Risk check passed for this simulated BUY order."
+            with risk_col2:
+                max_position_pct = st.number_input(
+                    "Max position (%)",
+                    min_value=1.0,
+                    max_value=100.0,
+                    value=20.0,
+                    step=1.0,
+                    key="paper_risk_max_position",
+                )
+
+            with risk_col3:
+                minimum_rr = st.number_input(
+                    "Min reward/risk",
+                    min_value=0.5,
+                    max_value=10.0,
+                    value=2.0,
+                    step=0.25,
+                    key="paper_risk_min_rr",
+                )
+
+            default_stop = max(0.01, market_price * 0.95)
+            default_target = market_price * 1.10
+
+            stop_price = st.number_input(
+                "Stop-loss price",
+                min_value=0.01,
+                value=float(default_stop),
+                step=0.01,
+                format="%.2f",
+                key="paper_risk_stop",
             )
-        else:
-            for blocker in risk_decision.blockers:
-                st.error(blocker)
 
-        for warning in risk_decision.warnings:
-            st.warning(warning)
+            target_price = st.number_input(
+                "Take-profit target",
+                min_value=0.01,
+                value=float(default_target),
+                step=0.01,
+                format="%.2f",
+                key="paper_risk_target",
+            )
+
+            try:
+                snapshot = account_service.snapshot(persist=False)
+
+                risk_plan = calculate_position_size(
+                    account_equity=float(snapshot.equity),
+                    entry_price=float(market_price),
+                    stop_price=float(stop_price),
+                    target_price=float(target_price),
+                    risk_pct=float(risk_pct),
+                    max_position_pct=float(max_position_pct),
+                )
+
+                risk_decision = validate_order_risk(
+                    account_equity=float(snapshot.equity),
+                    cash=float(account.cash),
+                    shares=float(shares),
+                    entry_price=float(market_price),
+                    stop_price=float(stop_price),
+                    target_price=float(target_price),
+                    risk_pct_limit=float(risk_pct),
+                    max_position_pct=float(max_position_pct),
+                    minimum_reward_risk=float(minimum_rr),
+                )
+
+            except ValueError as error:
+                st.error(str(error))
+
+            else:
+                risk_metrics = st.columns(4)
+
+                risk_metrics[0].metric(
+                    "Suggested Shares",
+                    f"{risk_plan.recommended_shares:,}",
+                )
+                risk_metrics[1].metric(
+                    "Max $ Risk",
+                    f"${risk_plan.max_risk_amount:,.2f}",
+                )
+                risk_metrics[2].metric(
+                    "Risk / Share",
+                    f"${risk_plan.risk_per_share:,.2f}",
+                )
+                risk_metrics[3].metric(
+                    "Reward / Risk",
+                    (
+                        "—"
+                        if risk_plan.reward_risk_ratio is None
+                        else f"{risk_plan.reward_risk_ratio:.2f}:1"
+                    ),
+                )
+
+                if risk_plan.recommended_shares > 0:
+                    st.button(
+                        "Use Suggested Position Size",
+                        key="paper_use_risk_size",
+                        width="stretch",
+                        on_click=_apply_suggested_shares,
+                        args=(float(risk_plan.recommended_shares),),
+                    )
+
+                if risk_decision.allowed:
+                    st.success(
+                        "Risk check passed for this simulated BUY order."
+                    )
+                else:
+                    for blocker in risk_decision.blockers:
+                        st.error(blocker)
+
+                for warning in risk_decision.warnings:
+                    st.warning(warning)
+
+
+        guardrail_status = None
+
+        if side == "BUY":
+            st.markdown("#### 🚦 Portfolio Guardrails")
+
+            g1, g2 = st.columns(2)
+
+            with g1:
+                guardrail_max_exposure = st.number_input(
+                    "Max total exposure (%)",
+                    min_value=10.0,
+                    max_value=100.0,
+                    value=80.0,
+                    step=5.0,
+                    key="paper_guardrail_max_exposure",
+                )
+
+                guardrail_max_positions = st.number_input(
+                    "Max open positions",
+                    min_value=1,
+                    max_value=50,
+                    value=8,
+                    step=1,
+                    key="paper_guardrail_max_positions",
+                )
+
+            with g2:
+                guardrail_daily_loss = st.number_input(
+                    "Daily loss limit (%)",
+                    min_value=0.5,
+                    max_value=20.0,
+                    value=3.0,
+                    step=0.5,
+                    key="paper_guardrail_daily_loss",
+                )
+
+                guardrail_loss_streak = st.number_input(
+                    "Consecutive-loss pause",
+                    min_value=1,
+                    max_value=20,
+                    value=3,
+                    step=1,
+                    key="paper_guardrail_loss_streak",
+                )
+
+            settings = GuardrailSettings(
+                max_total_exposure_pct=float(guardrail_max_exposure),
+                max_open_positions=int(guardrail_max_positions),
+                daily_loss_limit_pct=float(guardrail_daily_loss),
+                consecutive_loss_limit=int(guardrail_loss_streak),
+            )
+
+            guardrail_status = evaluate_proposed_buy_guardrails(
+                account_service,
+                ticker=ticker,
+                proposed_position_value=float(shares) * float(market_price),
+                settings=settings,
+            )
+
+            guardrail_metrics = st.columns(2)
+            guardrail_metrics[0].metric(
+                "Projected Exposure",
+                f"{guardrail_status.projected_exposure_pct:.1f}%",
+            )
+            guardrail_metrics[1].metric(
+                "Projected Open Positions",
+                guardrail_status.projected_open_positions,
+            )
+
+            if guardrail_status.allowed:
+                st.success("Portfolio guardrail check passed.")
+            else:
+                for blocker in guardrail_status.blockers:
+                    st.error(blocker)
+
+            for warning in guardrail_status.warnings:
+                st.warning(warning)
 
         reason = st.text_input(
             "Trade reason",
@@ -322,6 +419,7 @@ if side == "BUY":
             placeholder="Example: Atlas Strong Buy",
             key="paper_trade_reason",
         )
+
         notes = st.text_area(
             "Notes",
             value=(
@@ -332,6 +430,7 @@ if side == "BUY":
             placeholder="Why are you taking this trade?",
             key="paper_trade_notes",
         )
+
         confidence = st.slider(
             "Confidence",
             min_value=1,
@@ -374,6 +473,8 @@ if side == "BUY":
             and (
                 risk_decision is None
                 or not risk_decision.allowed
+                or guardrail_status is None
+                or not guardrail_status.allowed
             )
         )
 
@@ -417,7 +518,6 @@ if side == "BUY":
                 st.error(str(error))
             else:
                 clear_paper_trade_intent()
-
                 st.success(
                     f"{execution.side} filled: {execution.shares:g} "
                     f"{execution.ticker} @ ${execution.filled_price:,.2f}"
@@ -454,7 +554,13 @@ def display_order_history(
             "notes",
         ]
         st.dataframe(
-            order_df[[column for column in visible if column in order_df.columns]],
+            order_df[
+                [
+                    column
+                    for column in visible
+                    if column in order_df.columns
+                ]
+            ],
             width="stretch",
             hide_index=True,
         )
