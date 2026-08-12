@@ -1,13 +1,14 @@
-# Project Atlas — Sprint 31.3
+# Project Atlas — Sprint 31.4
 
-Paper Trading Intelligence now includes Market Regime Intelligence:
+Paper Trading Intelligence now includes multi-factor Setup Intelligence.
 
-- Bullish / Bearish / Sideways / Mixed classification
-- High / Lower volatility classification
-- persistent per-trade regime metadata
-- win rate, return, P&L and expectancy by regime
-- Sprint 31.2 evidence-quality safeguards
-- dedicated Regimes dashboard
+Atlas can compare combinations such as:
 
-Existing trades without regime metadata remain valid and are simply excluded
-from regime-specific analysis.
+- Score 90+ + Confidence 9-10 + Bullish
+- Score 80-89 + Confidence 7-8 + Sideways
+- Bullish + Lower Volatility + Strong Buy
+
+Each setup is ranked by expectancy while retaining sample-size evidence and
+reliability safeguards.
+
+Next: setup scorecards and trade-entry recommendations based on evidence.
