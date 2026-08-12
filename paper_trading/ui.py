@@ -5,6 +5,7 @@ from .sprint_status_ui import display_paper_trading_system_status
 from .account import PaperAccountService
 from .journal_ui import display_paper_journal_dashboard
 from .performance_ui import display_performance_dashboard
+from .risk_ui import display_risk_manager
 from .portfolio_ui import display_live_portfolio_dashboard
 from .trading_ui import display_order_history, display_order_ticket
 

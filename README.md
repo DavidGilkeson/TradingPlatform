@@ -1,17 +1,15 @@
-# Project Atlas — Sprint 29 Complete
+# Project Atlas — Sprint 30.1
 
-The complete paper-trading system is built:
+Sprint 29 Paper Trading remains intact.
 
-- Foundation
-- Order Engine
-- Portfolio Dashboard
-- Trading Journal
-- Performance Dashboard
-- Smart Watchlist
-- One-click queued paper trades
-- Opportunity Centre quick-trade component
-- Alert Centre quick-trade component
+Sprint 30 begins with the Atlas Risk Manager:
 
-Flow: **market scan -> opportunity/alert -> queued paper order -> simulated fill -> portfolio -> journal -> performance analytics**
+- risk-per-trade sizing
+- stop-loss planning
+- take-profit planning
+- reward/risk ratio
+- maximum position exposure
+- cash checks
+- pre-trade blockers and warnings
 
-All orders remain simulated.
+Next: enforce Risk Manager rules directly in the paper order ticket.
