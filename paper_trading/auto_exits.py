@@ -8,6 +8,7 @@ from typing import Any
 from .account import PaperAccountService
 from .exit_plans import ExitPlanRepository, evaluate_exit_plan
 from .orders import PaperOrderService
+from .exit_audit import ExitAuditRepository
 
 
 @dataclass(slots=True)
@@ -61,6 +62,7 @@ class AutomaticExitService:
         self.db_path = db_path
         self.account_service = PaperAccountService(db_path)
         self.exit_plans = ExitPlanRepository(db_path)
+        self.audit = ExitAuditRepository(db_path)
         self.orders = PaperOrderService(
             db_path,
             commission=commission,
@@ -71,13 +73,12 @@ class AutomaticExitService:
         self,
         *,
         enabled: bool = False,
+        excluded_tickers: set[str] | None = None,
     ) -> list[AutoExitEvent]:
         """Close triggered positions when automatic exits are enabled."""
 
-        if not enabled:
-            return []
-
         account = self.account_service.active_account()
+        excluded = {x.upper().strip() for x in (excluded_tickers or set())}
         positions = self.account_service.repository.list_positions(account.id)
 
         events: list[AutoExitEvent] = []
@@ -100,6 +101,24 @@ class AutomaticExitService:
             )
 
             if reason is None:
+                self.audit.record(account_id=account.id, ticker=position.ticker,
+                    decision="NO_TRIGGER", current_price=position.current_price,
+                    stop_price=plan.stop_price, target_price=plan.target_price,
+                    details="Price remains between saved exit levels.")
+                continue
+
+            if not enabled:
+                self.audit.record(account_id=account.id, ticker=position.ticker,
+                    decision=f"{reason}_DETECTED", current_price=position.current_price,
+                    stop_price=plan.stop_price, target_price=plan.target_price,
+                    details="Trigger detected; automatic exits are disabled.")
+                continue
+
+            if position.ticker.upper() in excluded:
+                self.audit.record(account_id=account.id, ticker=position.ticker,
+                    decision="MANUAL_OVERRIDE", current_price=position.current_price,
+                    stop_price=plan.stop_price, target_price=plan.target_price,
+                    details=f"{reason} detected but automatic exit was skipped.")
                 continue
 
             execution = self.orders.sell_market(
@@ -113,6 +132,11 @@ class AutomaticExitService:
                 confidence=5,
                 atlas_score=None,
             )
+
+            self.audit.record(account_id=account.id, ticker=position.ticker,
+                decision=f"{reason}_EXECUTED", current_price=position.current_price,
+                stop_price=plan.stop_price, target_price=plan.target_price,
+                details=f"Sold {execution.shares:g} shares at ${execution.filled_price:.2f}; realised P&L ${execution.realised_pnl:.2f}.")
 
             self.exit_plans.delete_plan(
                 account_id=account.id,

@@ -8,6 +8,7 @@ import streamlit as st
 from .account import PaperAccountService
 from .auto_exits import AutomaticExitService
 from .exit_plans import ExitPlanRepository, evaluate_exit_plan
+from .exit_audit import ExitAuditRepository
 
 
 def display_automatic_exit_controls(
@@ -135,3 +136,21 @@ def display_automatic_exit_controls(
         "For repeatable testing, trigger checks run only when you press "
         "'Check Exit Triggers Now'. A future sprint can schedule these checks."
     )
+
+    display_exit_audit_history(db_path=db_path)
+
+
+def display_exit_audit_history(*, db_path: str = "data/paper_trading.db") -> None:
+    """Reusable audit-history panel for automatic exit decisions."""
+    account_service = PaperAccountService(db_path)
+    account = account_service.active_account()
+    records = ExitAuditRepository(db_path).list_records(account_id=account.id, limit=100)
+    st.markdown("#### 🧾 Exit Automation Audit")
+    if not records:
+        st.info("No exit automation decisions recorded yet.")
+        return
+    st.dataframe(pd.DataFrame([{
+        "Time": r.created_at, "Ticker": r.ticker, "Decision": r.decision,
+        "Current": r.current_price, "Stop": r.stop_price,
+        "Target": r.target_price, "Details": r.details
+    } for r in records]), width="stretch", hide_index=True)
