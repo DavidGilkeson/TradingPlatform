@@ -8,6 +8,7 @@ from .performance_ui import display_performance_dashboard
 from .risk_ui import display_risk_manager
 from .guardrails_ui import display_portfolio_guardrails
 from .exit_plans_ui import display_exit_plan_manager
+from .auto_exits_ui import display_automatic_exit_controls
 from .portfolio_ui import display_live_portfolio_dashboard
 from .trading_ui import display_order_history, display_order_ticket
 

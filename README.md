@@ -1,4 +1,4 @@
-# Project Atlas — Sprint 30.5
+# Project Atlas — Sprint 30.6
 
 Sprint 30 now includes:
 
@@ -7,5 +7,6 @@ Sprint 30 now includes:
 - 30.3 Portfolio Guardrails
 - 30.4 Guardrail-Enforced BUY Orders
 - 30.5 Stop-Loss & Take-Profit Tracking
+- 30.6 Optional Automatic Paper Exits
 
-Atlas now tracks planned exit levels for every open simulated position.
+Automatic exits are paper-only and opt-in.
