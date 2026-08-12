@@ -1,3 +1,3 @@
-# Project Atlas — Sprint 30.7
+# Project Atlas — Sprint 31.1
 
-Exit Automation Audit & Manual Override backend added.
+Trading Intelligence added: performance by ticker, Atlas Score, confidence, and verdict/reason.
