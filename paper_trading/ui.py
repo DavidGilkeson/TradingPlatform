@@ -10,6 +10,7 @@ from .guardrails_ui import display_portfolio_guardrails
 from .exit_plans_ui import display_exit_plan_manager
 from .auto_exits_ui import display_automatic_exit_controls
 from .trading_intelligence_ui import display_trading_intelligence
+from .regime_intelligence_ui import display_regime_intelligence
 from .portfolio_ui import display_live_portfolio_dashboard
 from .trading_ui import display_order_history, display_order_ticket
 

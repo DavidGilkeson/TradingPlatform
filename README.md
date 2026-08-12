@@ -1,14 +1,13 @@
-# Project Atlas — Sprint 31.2
+# Project Atlas — Sprint 31.3
 
-Paper Trading Intelligence now includes sample-quality safeguards:
+Paper Trading Intelligence now includes Market Regime Intelligence:
 
-- sample grades
-- evidence levels
-- reliability scoring
-- configurable evidence threshold
-- Insight Ready status
-- overfitting / small-sample warnings
-- evidence-qualified pattern leadership
+- Bullish / Bearish / Sideways / Mixed classification
+- High / Lower volatility classification
+- persistent per-trade regime metadata
+- win rate, return, P&L and expectancy by regime
+- Sprint 31.2 evidence-quality safeguards
+- dedicated Regimes dashboard
 
-Atlas can still show early observations, but it no longer treats a lucky
-two-trade result as equal to a pattern supported by a larger sample.
+Existing trades without regime metadata remain valid and are simply excluded
+from regime-specific analysis.
