@@ -1,16 +1,15 @@
-# Project Atlas — Sprint 31.7
+# Project Atlas — Sprint 31.8
 
-Outcome Calibration is live.
+Exact entry-to-outcome lineage is now live.
 
-Atlas can now test whether its entry-time Historical Match scores correspond to
-better completed paper-trading outcomes.
+- BUY orders create FIFO position lots
+- partial SELLs consume lots correctly
+- realised trades link to exact originating BUY order IDs
+- multiple-entry positions preserve all contributing entry links
+- calibration uses exact entry intelligence snapshots
+- legacy trades remain supported but are never guessed
 
-New dashboard:
-- Match-score performance bands
-- high-score vs low-score win rates
-- score/return correlation
-- expectancy and P&L by score band
+This removes the main calibration-quality limitation identified in Sprint 31.7.
 
-This completes the first Paper Trading Intelligence loop.
-
-Next: Sprint 31.8 — exact trade-to-entry snapshot linkage and calibration quality.
+Next: close Sprint 31 with calibration-quality diagnostics and a consolidated
+Intelligence Scorecard.

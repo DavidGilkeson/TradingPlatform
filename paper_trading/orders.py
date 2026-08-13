@@ -153,6 +153,30 @@ class PaperOrderService:
                 ),
             )
 
+            connection.execute(
+                """
+                INSERT INTO paper_position_lots (
+                    account_id,
+                    ticker,
+                    buy_order_id,
+                    shares_original,
+                    shares_remaining,
+                    entry_price,
+                    opened_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    account.id,
+                    ticker,
+                    order_id,
+                    shares,
+                    shares,
+                    filled_price,
+                    now,
+                ),
+            )
+
         return OrderExecution(
             order_id=order_id,
             account_id=account.id,
@@ -212,6 +236,34 @@ class PaperOrderService:
         now = utc_now()
 
         with self.database.connect() as connection:
+            lot_rows = connection.execute(
+                """
+                SELECT id, buy_order_id, shares_remaining
+                FROM paper_position_lots
+                WHERE account_id = ?
+                  AND ticker = ?
+                  AND shares_remaining > 1e-9
+                ORDER BY opened_at ASC, id ASC
+                """,
+                (account.id, ticker),
+            ).fetchall()
+
+            remaining_to_allocate = shares
+            lot_allocations = []
+
+            for lot in lot_rows:
+                if remaining_to_allocate <= 1e-9:
+                    break
+
+                available = float(lot["shares_remaining"])
+                allocated = min(available, remaining_to_allocate)
+
+                if allocated > 1e-9:
+                    lot_allocations.append(
+                        (int(lot["id"]), int(lot["buy_order_id"]), allocated)
+                    )
+                    remaining_to_allocate -= allocated
+
             order_id = self._insert_order(
                 connection=connection,
                 account_id=account.id,
@@ -262,7 +314,7 @@ class PaperOrderService:
                     ),
                 )
 
-            connection.execute(
+            trade_cursor = connection.execute(
                 """
                 INSERT INTO paper_trades (
                     account_id,
@@ -290,6 +342,45 @@ class PaperOrderService:
                     return_pct,
                     self.commission,
                 ),
+            )
+            trade_id = int(trade_cursor.lastrowid)
+
+            # Exact entry-order lineage for all lots created under the new
+            # schema. Legacy positions without lot records remain sellable,
+            # but cannot be retroactively linked with certainty.
+            for lot_id, buy_order_id, allocated in lot_allocations:
+                weight = allocated / shares
+
+                connection.execute(
+                    """
+                    INSERT INTO paper_trade_entry_links (
+                        trade_id,
+                        buy_order_id,
+                        allocated_shares,
+                        allocation_weight
+                    )
+                    VALUES (?, ?, ?, ?)
+                    """,
+                    (trade_id, buy_order_id, allocated, weight),
+                )
+
+                connection.execute(
+                    """
+                    UPDATE paper_position_lots
+                    SET shares_remaining = shares_remaining - ?
+                    WHERE id = ?
+                    """,
+                    (allocated, lot_id),
+                )
+
+            connection.execute(
+                """
+                DELETE FROM paper_position_lots
+                WHERE account_id = ?
+                  AND ticker = ?
+                  AND shares_remaining <= 1e-9
+                """,
+                (account.id, ticker),
             )
 
         return OrderExecution(

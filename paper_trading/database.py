@@ -61,6 +61,30 @@ CREATE TABLE IF NOT EXISTS paper_trades (
     FOREIGN KEY(account_id) REFERENCES paper_accounts(id) ON DELETE CASCADE
 );
 
+
+CREATE TABLE IF NOT EXISTS paper_position_lots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id INTEGER NOT NULL,
+    ticker TEXT NOT NULL,
+    buy_order_id INTEGER NOT NULL,
+    shares_original REAL NOT NULL CHECK(shares_original > 0),
+    shares_remaining REAL NOT NULL CHECK(shares_remaining >= 0),
+    entry_price REAL NOT NULL CHECK(entry_price > 0),
+    opened_at TEXT NOT NULL,
+    FOREIGN KEY(account_id) REFERENCES paper_accounts(id) ON DELETE CASCADE,
+    FOREIGN KEY(buy_order_id) REFERENCES paper_orders(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS paper_trade_entry_links (
+    trade_id INTEGER NOT NULL,
+    buy_order_id INTEGER NOT NULL,
+    allocated_shares REAL NOT NULL CHECK(allocated_shares > 0),
+    allocation_weight REAL NOT NULL CHECK(allocation_weight > 0 AND allocation_weight <= 1),
+    PRIMARY KEY(trade_id, buy_order_id),
+    FOREIGN KEY(trade_id) REFERENCES paper_trades(id) ON DELETE CASCADE,
+    FOREIGN KEY(buy_order_id) REFERENCES paper_orders(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS paper_journal (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     account_id INTEGER NOT NULL,
@@ -108,8 +132,14 @@ class PaperTradingDatabase:
     def reset_all(self) -> None:
         with self.connect() as connection:
             for table in [
-                "paper_account_snapshots", "paper_journal", "paper_trades",
-                "paper_orders", "paper_positions", "paper_accounts"
+                "paper_account_snapshots",
+                "paper_trade_entry_links",
+                "paper_position_lots",
+                "paper_journal",
+                "paper_trades",
+                "paper_orders",
+                "paper_positions",
+                "paper_accounts",
             ]:
                 connection.execute(f"DELETE FROM {table}")
             connection.execute("DELETE FROM sqlite_sequence WHERE name LIKE 'paper_%'")

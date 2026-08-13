@@ -23,12 +23,22 @@ def display_outcome_calibration(*,db_path="data/paper_trading.db"):
 
     cols=st.columns(4)
     cols[0].metric("Calibrated Trades",summary.calibrated_trades)
-    cols[1].metric("Score/Return Correlation",
-        "—" if summary.correlation is None else f"{summary.correlation:.2f}")
+    cols[1].metric("Exact Entry Links",summary.exact_linked_allocations)
     cols[2].metric("80+ Match Win Rate",
         "—" if summary.high_score_win_rate is None else f"{summary.high_score_win_rate*100:.1f}%")
     cols[3].metric("<60 Match Win Rate",
         "—" if summary.low_score_win_rate is None else f"{summary.low_score_win_rate*100:.1f}%")
+
+    st.metric(
+        "Score/Return Correlation",
+        "—" if summary.correlation is None else f"{summary.correlation:.2f}",
+    )
+
+    if summary.legacy_unlinked_trades:
+        st.info(
+            f"{summary.legacy_unlinked_trades} older completed trade(s) predate "
+            "exact entry linkage and are excluded from exact calibration."
+        )
 
     if summary.score_direction_valid is True:
         st.success("Higher-scored setups are currently winning more often than low-scored setups.")
