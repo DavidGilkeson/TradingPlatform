@@ -5,6 +5,7 @@ from __future__ import annotations
 import streamlit as st
 
 from .account import PaperAccountService
+from .trade_scorecard_ui import display_trade_scorecard
 from .setup_intelligence import (
     evidence_qualified_setup_leader,
     setup_performance,
@@ -132,4 +133,61 @@ def display_setup_intelligence(
         "Multi-factor analysis can overfit quickly. More dimensions create "
         "smaller groups, so Atlas requires evidence thresholds before "
         "promoting a setup."
+    )
+
+
+    st.divider()
+    st.markdown("### 🔎 Proposed Trade Scorecard")
+    st.caption(
+        "Enter a proposed setup to compare it with similar completed "
+        "paper trades."
+    )
+
+    score_col, confidence_col = st.columns(2)
+    with score_col:
+        proposed_score = st.number_input(
+            "Proposed Atlas Score",
+            min_value=0.0,
+            max_value=100.0,
+            value=80.0,
+            step=1.0,
+            key="scorecard_atlas_score",
+        )
+    with confidence_col:
+        proposed_confidence = st.number_input(
+            "Proposed Confidence",
+            min_value=0.0,
+            max_value=10.0,
+            value=7.0,
+            step=1.0,
+            key="scorecard_confidence",
+        )
+
+    regime_col, volatility_col = st.columns(2)
+    with regime_col:
+        proposed_trend = st.selectbox(
+            "Trend Regime",
+            ["", "Bullish", "Bearish", "Sideways", "Mixed"],
+            key="scorecard_trend",
+        )
+    with volatility_col:
+        proposed_volatility = st.selectbox(
+            "Volatility Regime",
+            ["", "Lower Volatility", "High Volatility"],
+            key="scorecard_volatility",
+        )
+
+    proposed_verdict = st.text_input(
+        "Verdict / Trade Reason (optional)",
+        key="scorecard_verdict",
+    )
+
+    display_trade_scorecard(
+        db_path=db_path,
+        atlas_score=proposed_score,
+        confidence=proposed_confidence,
+        trend_regime=proposed_trend or None,
+        volatility_regime=proposed_volatility or None,
+        verdict=proposed_verdict or None,
+        minimum_evidence_trades=int(evidence),
     )

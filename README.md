@@ -1,14 +1,15 @@
-# Project Atlas — Sprint 31.4
+# Project Atlas — Sprint 31.6
 
-Paper Trading Intelligence now includes multi-factor Setup Intelligence.
+Order Ticket Intelligence is live.
 
-Atlas can compare combinations such as:
+The Paper BUY ticket now displays the historical setup scorecard before order
+execution and persists the entry-time intelligence snapshot after a successful
+paper fill.
 
-- Score 90+ + Confidence 9-10 + Bullish
-- Score 80-89 + Confidence 7-8 + Sideways
-- Bullish + Lower Volatility + Strong Buy
+This closes more of the Atlas learning loop:
 
-Each setup is ranked by expectancy while retaining sample-size evidence and
-reliability safeguards.
+scanner -> analysis -> decision -> paper order -> saved entry intelligence ->
+trade outcome -> future learning
 
-Next: setup scorecards and trade-entry recommendations based on evidence.
+Next: Outcome Calibration — measure whether higher Historical Match scores
+actually correspond to better paper-trading outcomes.

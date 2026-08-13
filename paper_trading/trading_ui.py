@@ -18,6 +18,10 @@ from .portfolio_guardrails import (
     evaluate_proposed_buy_guardrails,
 )
 from .risk_manager import calculate_position_size, validate_order_risk
+from .trade_scorecard import historical_setup_scorecard
+from .trade_scorecard_ui import display_trade_scorecard
+from .order_intelligence import derive_regime_from_context
+from .intelligence_snapshot import IntelligenceSnapshotRepository
 
 
 def _latest_price(
@@ -439,6 +443,35 @@ def display_order_ticket(
             key="paper_trade_confidence",
         )
 
+        atlas_score = context.get("Atlas Score", context.get("Score"))
+        regime = derive_regime_from_context(context)
+
+        scorecard = None
+        if side == "BUY":
+            st.divider()
+            display_trade_scorecard(
+                db_path=db_path,
+                atlas_score=atlas_score,
+                confidence=confidence,
+                trend_regime=regime.trend if regime else None,
+                volatility_regime=regime.volatility if regime else None,
+                verdict=reason or None,
+                minimum_evidence_trades=10,
+            )
+            try:
+                scorecard = historical_setup_scorecard(
+                    account_service,
+                    db_path=db_path,
+                    atlas_score=atlas_score,
+                    confidence=confidence,
+                    trend_regime=regime.trend if regime else None,
+                    volatility_regime=regime.volatility if regime else None,
+                    verdict=reason or None,
+                    minimum_evidence_trades=10,
+                )
+            except ValueError:
+                scorecard = None
+
         estimated_price = (
             market_price * (1 + slippage_pct)
             if side == "BUY"
@@ -491,8 +524,6 @@ def display_order_ticket(
                 slippage_pct=slippage_pct,
             )
 
-            atlas_score = context.get("Atlas Score", context.get("Score"))
-
             try:
                 if side == "BUY":
                     execution = order_service.buy_market(
@@ -517,6 +548,28 @@ def display_order_ticket(
             except ValueError as error:
                 st.error(str(error))
             else:
+                if side == "BUY" and scorecard is not None:
+                    IntelligenceSnapshotRepository(db_path).save(
+                        order_id=execution.order_id,
+                        account_id=execution.account_id,
+                        ticker=execution.ticker,
+                        atlas_score=(
+                            float(atlas_score)
+                            if atlas_score is not None and pd.notna(atlas_score)
+                            else None
+                        ),
+                        confidence=float(confidence),
+                        trend_regime=regime.trend if regime else None,
+                        volatility_regime=regime.volatility if regime else None,
+                        historical_match_score=scorecard.match_score,
+                        matched_trades=scorecard.matched_trades,
+                        historical_win_rate=scorecard.win_rate,
+                        historical_expectancy=scorecard.expectancy,
+                        evidence_level=scorecard.evidence_level,
+                        sample_grade=scorecard.sample_grade,
+                        reliability=scorecard.reliability,
+                        historical_verdict=scorecard.verdict,
+                    )
                 clear_paper_trade_intent()
                 st.success(
                     f"{execution.side} filled: {execution.shares:g} "
