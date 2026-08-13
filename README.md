@@ -1,15 +1,16 @@
-# Project Atlas — Sprint 31.6
+# Project Atlas — Sprint 31.7
 
-Order Ticket Intelligence is live.
+Outcome Calibration is live.
 
-The Paper BUY ticket now displays the historical setup scorecard before order
-execution and persists the entry-time intelligence snapshot after a successful
-paper fill.
+Atlas can now test whether its entry-time Historical Match scores correspond to
+better completed paper-trading outcomes.
 
-This closes more of the Atlas learning loop:
+New dashboard:
+- Match-score performance bands
+- high-score vs low-score win rates
+- score/return correlation
+- expectancy and P&L by score band
 
-scanner -> analysis -> decision -> paper order -> saved entry intelligence ->
-trade outcome -> future learning
+This completes the first Paper Trading Intelligence loop.
 
-Next: Outcome Calibration — measure whether higher Historical Match scores
-actually correspond to better paper-trading outcomes.
+Next: Sprint 31.8 — exact trade-to-entry snapshot linkage and calibration quality.

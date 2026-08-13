@@ -12,6 +12,7 @@ from .auto_exits_ui import display_automatic_exit_controls
 from .trading_intelligence_ui import display_trading_intelligence
 from .regime_intelligence_ui import display_regime_intelligence
 from .setup_intelligence_ui import display_setup_intelligence
+from .outcome_calibration_ui import display_outcome_calibration
 from .portfolio_ui import display_live_portfolio_dashboard
 from .trading_ui import display_order_history, display_order_ticket
 
