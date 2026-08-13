@@ -1,15 +1,24 @@
-# Project Atlas — Sprint 31.8
+# Project Atlas — Sprint 31.9
 
-Exact entry-to-outcome lineage is now live.
+Sprint 31 is complete.
 
-- BUY orders create FIFO position lots
-- partial SELLs consume lots correctly
-- realised trades link to exact originating BUY order IDs
-- multiple-entry positions preserve all contributing entry links
-- calibration uses exact entry intelligence snapshots
-- legacy trades remain supported but are never guessed
+The new Intelligence Health dashboard consolidates the full paper-trading
+learning system:
 
-This removes the main calibration-quality limitation identified in Sprint 31.7.
+scanner -> decision -> order -> entry snapshot -> exact entry linkage ->
+realised outcome -> calibration -> evidence health
 
-Next: close Sprint 31 with calibration-quality diagnostics and a consolidated
-Intelligence Scorecard.
+Paper Trading now includes a dedicated Intelligence workspace with:
+
+- Health
+- Performance
+- Patterns
+- Regimes
+- Setups
+- Calibration
+- Journal
+
+The Intelligence Health score measures evidence maturity and data quality,
+not future predictive certainty.
+
+Next major phase: Sprint 32 — Paper Trading Validation & Forward Testing.

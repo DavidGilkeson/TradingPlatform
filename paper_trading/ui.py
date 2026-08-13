@@ -13,6 +13,7 @@ from .trading_intelligence_ui import display_trading_intelligence
 from .regime_intelligence_ui import display_regime_intelligence
 from .setup_intelligence_ui import display_setup_intelligence
 from .outcome_calibration_ui import display_outcome_calibration
+from .intelligence_health_ui import display_intelligence_health
 from .portfolio_ui import display_live_portfolio_dashboard
 from .trading_ui import display_order_history, display_order_ticket
 
@@ -32,13 +33,38 @@ def display_paper_trading_dashboard(db_path="data/paper_trading.db", market_df: 
                 t: float(p) for t,p in prices.items() if pd.notna(p) and float(p) > 0
             })
 
-    trade_tab, portfolio_tab, history_tab, account_tab = st.tabs(
-        ["🛒 Trade","📊 Portfolio","📋 History","⚙ Account"]
+    trade_tab, portfolio_tab, intelligence_tab, history_tab, account_tab = st.tabs(
+        ["🛒 Trade","📊 Portfolio","🧠 Intelligence","📋 History","⚙ Account"]
     )
     with trade_tab:
         display_order_ticket(market_df=market_df, db_path=db_path)
     with portfolio_tab:
         display_live_portfolio_dashboard(db_path=db_path)
+    with intelligence_tab:
+        intelligence_sections = st.tabs([
+            "❤️ Health",
+            "📈 Performance",
+            "🧠 Patterns",
+            "🌦️ Regimes",
+            "🧩 Setups",
+            "🎯 Calibration",
+            "📓 Journal",
+        ])
+        with intelligence_sections[0]:
+            display_intelligence_health(db_path=db_path)
+        with intelligence_sections[1]:
+            display_performance_dashboard(db_path=db_path)
+        with intelligence_sections[2]:
+            display_trading_intelligence(db_path=db_path)
+        with intelligence_sections[3]:
+            display_regime_intelligence(db_path=db_path)
+        with intelligence_sections[4]:
+            display_setup_intelligence(db_path=db_path)
+        with intelligence_sections[5]:
+            display_outcome_calibration(db_path=db_path)
+        with intelligence_sections[6]:
+            display_paper_journal_dashboard(db_path=db_path)
+
     with history_tab:
         display_order_history(db_path=db_path)
     with account_tab:
