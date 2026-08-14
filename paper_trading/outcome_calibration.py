@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import pandas as pd
 from .account import PaperAccountService
+from .intelligence_snapshot import IntelligenceSnapshotRepository
 
 
 @dataclass(slots=True)
@@ -25,6 +26,7 @@ def build_calibration_frame(service:PaperAccountService)->pd.DataFrame:
     Return percentage remains the aggregate realised trade return because the
     established paper-trade engine realises against weighted-average cost.
     """
+    IntelligenceSnapshotRepository(str(service.database.db_path))
     account=service.active_account()
 
     with service.database.connect() as c:

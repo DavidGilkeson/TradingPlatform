@@ -100,7 +100,7 @@ def rolling_performance(service, window=5):
 def monthly_performance(service):
     d=daily_performance(service)
     if d.empty: return pd.DataFrame()
-    d=d.copy(); d["month"]=d["captured_at"].dt.to_period("M").astype(str)
+    d=d.copy(); d["month"]=d["captured_at"].dt.tz_localize(None).dt.to_period("M").astype(str)
     rows=[]
     for month,g in d.groupby("month",sort=True):
         s=float(g["equity"].iloc[0]); e=float(g["equity"].iloc[-1])

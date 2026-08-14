@@ -1,24 +1,11 @@
-# Project Atlas — Sprint 31.9
+# Project Atlas — Sprint 32.1
 
-Sprint 31 is complete.
+Sprint 32 Forward Testing has started.
 
-The new Intelligence Health dashboard consolidates the full paper-trading
-learning system:
+- Prospective TAKEN / SKIPPED / WATCH decisions
+- Atlas Score, confidence, price, signal and reason capture
+- Forward-test history
+- Decision-discipline metrics
+- Monthly pandas timezone warning cleanup
 
-scanner -> decision -> order -> entry snapshot -> exact entry linkage ->
-realised outcome -> calibration -> evidence health
-
-Paper Trading now includes a dedicated Intelligence workspace with:
-
-- Health
-- Performance
-- Patterns
-- Regimes
-- Setups
-- Calibration
-- Journal
-
-The Intelligence Health score measures evidence maturity and data quality,
-not future predictive certainty.
-
-Next major phase: Sprint 32 — Paper Trading Validation & Forward Testing.
+Next: automatically measure subsequent outcomes for taken and skipped opportunities.

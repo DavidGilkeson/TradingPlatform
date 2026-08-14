@@ -14,6 +14,7 @@ from .regime_intelligence_ui import display_regime_intelligence
 from .setup_intelligence_ui import display_setup_intelligence
 from .outcome_calibration_ui import display_outcome_calibration
 from .intelligence_health_ui import display_intelligence_health
+from .forward_testing_ui import display_forward_testing
 from .portfolio_ui import display_live_portfolio_dashboard
 from .trading_ui import display_order_history, display_order_ticket
 
@@ -33,13 +34,16 @@ def display_paper_trading_dashboard(db_path="data/paper_trading.db", market_df: 
                 t: float(p) for t,p in prices.items() if pd.notna(p) and float(p) > 0
             })
 
-    trade_tab, portfolio_tab, intelligence_tab, history_tab, account_tab = st.tabs(
-        ["🛒 Trade","📊 Portfolio","🧠 Intelligence","📋 History","⚙ Account"]
+    trade_tab, portfolio_tab, forward_tab, intelligence_tab, history_tab, account_tab = st.tabs(
+        ["🛒 Trade","📊 Portfolio","🧪 Forward Test","🧠 Intelligence","📋 History","⚙ Account"]
     )
     with trade_tab:
         display_order_ticket(market_df=market_df, db_path=db_path)
     with portfolio_tab:
         display_live_portfolio_dashboard(db_path=db_path)
+    with forward_tab:
+        display_forward_testing(db_path=db_path)
+
     with intelligence_tab:
         intelligence_sections = st.tabs([
             "❤️ Health",
