@@ -8,6 +8,7 @@ from .journal_analytics import (
 )
 from .journal_review import PaperTradeReviewRepository
 from .workflow import review_completeness
+from .plan_outcome import PlanOutcomeRepository
 
 def _ratio(v):
     if v is None: return "—"
@@ -73,6 +74,40 @@ def display_paper_journal_dashboard(db_path="data/paper_trading.db"):
     trade_id=options[label]
     repo=PaperTradeReviewRepository(db_path)
     existing=repo.get_review(trade_id) or {}
+
+    comparison=PlanOutcomeRepository(db_path).comparison(trade_id)
+    if comparison and comparison["metrics"]:
+        plan=comparison["plan"]
+        metrics=comparison["metrics"]
+        st.markdown("##### 📋 Original Plan vs Actual Outcome")
+        plan_cols=st.columns(4)
+        plan_cols[0].metric("Planned Entry",f'${metrics["planned_entry"]:,.2f}')
+        plan_cols[1].metric("Planned Stop",f'${metrics["planned_stop"]:,.2f}')
+        plan_cols[2].metric("Planned Target",f'${metrics["planned_target"]:,.2f}')
+        plan_cols[3].metric(
+            "Planned R:R",
+            "—" if metrics["planned_reward_risk"] is None
+            else f'{metrics["planned_reward_risk"]:.2f}:1')
+        actual_cols=st.columns(4)
+        actual_cols[0].metric("Actual Exit",f'${metrics["actual_exit"]:,.2f}')
+        actual_cols[1].metric("Actual Return",f'{metrics["actual_return_pct"]:+.2f}%')
+        actual_cols[2].metric("Realised P&L",f'${metrics["realised_pnl"]:+,.2f}')
+        actual_cols[3].metric("Outcome vs Plan",metrics["outcome"])
+        st.markdown("**Original thesis**")
+        st.write(plan.get("thesis") or "—")
+        st.markdown("**Original invalidation**")
+        st.write(plan.get("invalidation") or "—")
+        st.caption(
+            "This entry-time plan was saved before the outcome was known. "
+            "Use it when judging whether you followed the process.")
+        if len(comparison["all_entry_plans"])>1:
+            st.info(
+                f'This trade used {len(comparison["all_entry_plans"])} entry lots. '
+                "The largest-weight entry plan is shown as the primary comparison.")
+    else:
+        st.info(
+            "No structured entry plan is linked to this trade. This is expected "
+            "for trades opened before Sprint 33.1.")
     saved_follow=existing.get("followed_plan")
     followed=st.selectbox(
         "Did you follow your plan?",[None,True,False],

@@ -1,33 +1,32 @@
-# Project Atlas — Sprint 33.1
+# Project Atlas — Sprint 33.2
 
-Structured Pre-Trade Thesis & Risk Plan is live.
+Plan vs Outcome Review is live.
 
-Before a Paper BUY, Atlas now captures and permanently links the plan to the
-actual filled buy order:
+The Post-Trade Journal now retrieves the immutable structured entry plan and
+places it beside the completed result.
 
-- written trade thesis
-- thesis invalidation condition
-- actual filled entry price
-- stop-loss
-- take-profit target
-- planned shares
-- account risk %
-- maximum position %
-- minimum acceptable reward/risk
-- calculated planned reward/risk
-- trader confidence
-- Atlas score
-- entry-time market regime
-- entry-time volatility regime
+Planned:
+- entry
+- stop
+- target
+- reward/risk
+- original thesis
+- original invalidation
 
-A BUY now requires a written thesis. This makes the journal useful for
-prospective learning rather than allowing the rationale to be reconstructed
-after seeing the outcome.
+Actual:
+- exit
+- return %
+- realised P&L
+- outcome relative to the planned stop/target range
 
-Trade plans are stored in `paper_trade_plans` and linked by `buy_order_id`.
-Existing databases are unaffected because the table is created lazily and
-safely.
+Atlas classifies completed outcomes as target reached/exceeded, stop
+reached/breached, profitable or losing exit inside the plan range, or
+break-even.
 
-Next: Sprint 33.2 — Plan vs Outcome Review. Link completed trades back to their
-entry plans and automatically show planned entry/stop/target/R:R beside actual
-return, P&L and post-trade execution review.
+The comparison uses exact `paper_trade_entry_links` lineage instead of guessing
+which BUY created the completed trade. Multi-entry trades use the
+largest-weight linked plan as the primary display and are clearly identified.
+
+Legacy trades opened before Sprint 33.1 remain supported.
+
+Next: Sprint 33.3 — Plan Adherence Analytics.
