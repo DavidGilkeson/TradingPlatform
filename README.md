@@ -1,11 +1,27 @@
-# Project Atlas — Sprint 32.1
+# Project Atlas — Sprint 32.2
 
-Sprint 32 Forward Testing has started.
+Forward-Test Outcome Tracking is live.
 
-- Prospective TAKEN / SKIPPED / WATCH decisions
-- Atlas Score, confidence, price, signal and reason capture
-- Forward-test history
-- Decision-discipline metrics
-- Monthly pandas timezone warning cleanup
+Atlas can now preserve future observations for every prospectively recorded
+TAKEN, SKIPPED or WATCH opportunity.
 
-Next: automatically measure subsequent outcomes for taken and skipped opportunities.
+Supported observation horizons:
+- 1 trading day
+- 3 trading days
+- 5 trading days
+- 10 trading days
+- 20 trading days
+
+For each observation Atlas calculates the percentage move from the original
+recorded market price.
+
+The Forward Test dashboard now compares TAKEN versus SKIPPED opportunities by
+horizon and reports a Decision Edge:
+
+Taken average return - Skipped average return
+
+This is the first direct prospective measurement of whether Atlas/user
+selection decisions added value.
+
+Next: Sprint 32.3 — automate due-outcome collection from market data and add
+benchmark-relative performance.

@@ -1,7 +1,13 @@
 """Forward Testing workspace."""
 import streamlit as st
 from .account import PaperAccountService
-from .forward_testing import ForwardTestRepository, forward_test_summary
+from .forward_testing import (
+    ForwardTestRepository,
+    ForwardTestOutcomeRepository,
+    forward_test_summary,
+    outcome_comparison,
+    decision_quality,
+)
 
 def display_forward_testing(*,db_path="data/paper_trading.db"):
     st.subheader("🧪 Forward Testing")
@@ -37,3 +43,125 @@ def display_forward_testing(*,db_path="data/paper_trading.db"):
     if history.empty: st.info("No forward-test decisions recorded yet.")
     else: st.dataframe(history,width="stretch",hide_index=True)
     st.warning("Record opportunities before you know their outcome to reduce hindsight and selection bias.")
+
+
+    st.divider()
+    st.markdown("### 📍 Outcome Tracking")
+    outcome_repo = ForwardTestOutcomeRepository(db_path)
+
+    if history.empty:
+        st.info("Record a forward-test decision before adding outcomes.")
+    else:
+        labels = {
+            int(row["id"]): (
+                f'#{int(row["id"])} · {row["ticker"]} · '
+                f'{row["decision"]} · {row["recorded_at"]}'
+            )
+            for _, row in history.iterrows()
+        }
+
+        decision_id = st.selectbox(
+            "Forward-test decision",
+            options=list(labels.keys()),
+            format_func=lambda value: labels[value],
+            key="ft_outcome_decision",
+        )
+
+        c1, c2 = st.columns(2)
+        with c1:
+            horizon = st.selectbox(
+                "Outcome horizon",
+                [1, 3, 5, 10, 20],
+                index=2,
+                format_func=lambda value: f"{value} trading day(s)",
+                key="ft_outcome_horizon",
+            )
+        with c2:
+            observed_price = st.number_input(
+                "Observed Price",
+                min_value=0.0,
+                value=0.0,
+                step=0.01,
+                key="ft_observed_price",
+            )
+
+        if st.button("Save Outcome", key="ft_save_outcome"):
+            if observed_price <= 0:
+                st.error("Observed price must be greater than zero.")
+            else:
+                outcome_repo.save_outcome(
+                    forward_test_id=decision_id,
+                    horizon_days=horizon,
+                    observed_price=observed_price,
+                )
+                st.success("Forward-test outcome saved.")
+                st.rerun()
+
+    outcomes = outcome_repo.outcomes(account.id)
+
+    if not outcomes.empty:
+        st.markdown("#### Taken vs Skipped")
+        comparison = outcome_comparison(outcomes)
+        st.dataframe(
+            comparison,
+            width="stretch",
+            hide_index=True,
+            column_config={
+                "Positive Rate": st.column_config.NumberColumn(format="%.2f"),
+                "Average Return": st.column_config.NumberColumn(format="%.2f%%"),
+                "Median Return": st.column_config.NumberColumn(format="%.2f%%"),
+                "Best Return": st.column_config.NumberColumn(format="%.2f%%"),
+                "Worst Return": st.column_config.NumberColumn(format="%.2f%%"),
+            },
+        )
+
+        available_horizons = sorted(
+            int(value) for value in outcomes["horizon_days"].unique()
+        )
+        selected_horizon = st.selectbox(
+            "Decision-quality horizon",
+            available_horizons,
+            format_func=lambda value: f"{value} trading day(s)",
+            key="ft_quality_horizon",
+        )
+
+        quality = decision_quality(outcomes, selected_horizon)
+
+        if quality is None:
+            st.info(
+                "Atlas needs both TAKEN and SKIPPED outcomes at this horizon "
+                "before it can measure decision edge."
+            )
+        else:
+            metrics = st.columns(3)
+            metrics[0].metric(
+                "Taken Avg Return",
+                f'{quality["taken_average_return"]:.2f}%',
+            )
+            metrics[1].metric(
+                "Skipped Avg Return",
+                f'{quality["skipped_average_return"]:.2f}%',
+            )
+            metrics[2].metric(
+                "Decision Edge",
+                f'{quality["decision_edge"]:+.2f}%',
+            )
+
+            if quality["decision_edge"] > 0:
+                st.success(
+                    "At this horizon, TAKEN opportunities have outperformed "
+                    "SKIPPED opportunities so far."
+                )
+            elif quality["decision_edge"] < 0:
+                st.warning(
+                    "At this horizon, SKIPPED opportunities have outperformed "
+                    "TAKEN opportunities so far."
+                )
+            else:
+                st.info(
+                    "Taken and skipped opportunities currently have the same "
+                    "average return at this horizon."
+                )
+
+        st.markdown("#### Recorded Outcomes")
+        st.dataframe(outcomes, width="stretch", hide_index=True)
