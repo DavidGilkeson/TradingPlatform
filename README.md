@@ -1,13 +1,25 @@
-# Project Atlas — Sprint 32.6
+# Project Atlas — Sprint 32.7
 
-Market Regime Forward Validation is live.
+Automatic Entry-Time Regime Detection is live.
 
-New forward-test decisions preserve:
+When a new forward-test decision is recorded, Atlas can automatically analyse
+SPY and preserve the market environment that existed at that moment.
+
+Captured evidence:
 - Bullish / Neutral / Bearish market regime
 - Quiet / Normal / Volatile volatility regime
+- Strong / Moderate / Weak trend strength
+- SPY price
+- 50-day moving average
+- 200-day moving average
+- percentage distance from both averages
+- 20-day annualised realised volatility
 
-Cohort Validation can now compare subsequent outcomes across those entry-time
-conditions. Existing databases migrate automatically, and older observations
-remain unclassified rather than being guessed.
+The market classifier uses SPY price structure relative to its 50-day and
+200-day moving averages. A manual fallback remains available when market data
+cannot be downloaded.
 
-Next: Sprint 32.7 — automatic entry-time regime classification.
+Existing databases migrate automatically. Historical records are not rewritten
+with hindsight.
+
+Next: Sprint 32.8 — regime-aware validation insights and warnings.

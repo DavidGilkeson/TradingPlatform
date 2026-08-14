@@ -1,6 +1,7 @@
 """Forward Testing workspace."""
 import streamlit as st
 from .account import PaperAccountService
+from .regime_classifier import YFinanceRegimeProvider
 from .forward_testing import (
     ForwardTestRepository,
     ForwardTestOutcomeRepository,
@@ -28,16 +29,67 @@ def display_forward_testing(*,db_path="data/paper_trading.db"):
             confidence=st.number_input("Confidence",0.0,10.0,5.0,1.0,key="ft_confidence")
             price=st.number_input("Market Price",min_value=0.0,value=0.0,step=0.01,key="ft_price")
             signal=st.text_input("Signal",key="ft_signal")
-        regime_cols=st.columns(2)
-        with regime_cols[0]:
-            market_regime=st.selectbox(
-                "Market Regime",["Unknown","Bullish","Neutral","Bearish"],
-                key="ft_market_regime")
-        with regime_cols[1]:
-            volatility_regime=st.selectbox(
-                "Volatility Regime",["Unknown","Quiet","Normal","Volatile"],
-                key="ft_volatility_regime")
-        reason=st.text_area("Why take, skip or watch this setup?",key="ft_reason")
+        st.markdown("##### Market Environment")
+        auto_regime=st.checkbox(
+            "Automatically detect regime from SPY",
+            value=True,
+            key="ft_auto_regime",
+        )
+
+        regime_snapshot=None
+        market_regime="Unknown"
+        volatility_regime="Unknown"
+
+        if auto_regime:
+            try:
+                regime_snapshot=YFinanceRegimeProvider("SPY").snapshot()
+                market_regime=regime_snapshot.market_regime
+                volatility_regime=regime_snapshot.volatility_regime
+
+                regime_metrics=st.columns(4)
+                regime_metrics[0].metric("Market",market_regime)
+                regime_metrics[1].metric("Volatility",volatility_regime)
+                regime_metrics[2].metric(
+                    "Trend",regime_snapshot.trend_strength)
+                regime_metrics[3].metric(
+                    "SPY vs 200D",
+                    f"{regime_snapshot.price_vs_ma200_pct:+.2f}%",
+                )
+
+                st.caption(
+                    f"SPY {regime_snapshot.benchmark_price:.2f} · "
+                    f"50D MA {regime_snapshot.ma50:.2f} · "
+                    f"200D MA {regime_snapshot.ma200:.2f} · "
+                    f"SPY vs 50D {regime_snapshot.price_vs_ma50_pct:+.2f}% · "
+                    f"20D annualised volatility "
+                    f"{regime_snapshot.realised_volatility_pct:.1f}%"
+                )
+            except Exception as exc:
+                st.warning(
+                    f"Automatic regime detection unavailable: {exc}. "
+                    "Use the manual fallback below."
+                )
+                auto_regime=False
+
+        if not auto_regime:
+            regime_cols=st.columns(2)
+            with regime_cols[0]:
+                market_regime=st.selectbox(
+                    "Market Regime",
+                    ["Unknown","Bullish","Neutral","Bearish"],
+                    key="ft_market_regime",
+                )
+            with regime_cols[1]:
+                volatility_regime=st.selectbox(
+                    "Volatility Regime",
+                    ["Unknown","Quiet","Normal","Volatile"],
+                    key="ft_volatility_regime",
+                )
+
+        reason=st.text_area(
+            "Why take, skip or watch this setup?",
+            key="ft_reason",
+        )
         if st.button("Save Forward-Test Decision",type="primary",key="ft_save"):
             if not ticker: st.error("Enter a ticker first.")
             else:
@@ -46,7 +98,24 @@ def display_forward_testing(*,db_path="data/paper_trading.db"):
                     market_price=price if price>0 else None,
                     signal=signal or None,reason=reason or None,
                     market_regime=None if market_regime=="Unknown" else market_regime,
-                    volatility_regime=None if volatility_regime=="Unknown" else volatility_regime)
+                    volatility_regime=None if volatility_regime=="Unknown" else volatility_regime,
+                    trend_strength=(
+                        regime_snapshot.trend_strength if regime_snapshot else None),
+                    regime_benchmark=(
+                        regime_snapshot.benchmark_ticker if regime_snapshot else None),
+                    regime_benchmark_price=(
+                        regime_snapshot.benchmark_price if regime_snapshot else None),
+                    regime_ma50=(
+                        regime_snapshot.ma50 if regime_snapshot else None),
+                    regime_ma200=(
+                        regime_snapshot.ma200 if regime_snapshot else None),
+                    regime_price_vs_ma50_pct=(
+                        regime_snapshot.price_vs_ma50_pct if regime_snapshot else None),
+                    regime_price_vs_ma200_pct=(
+                        regime_snapshot.price_vs_ma200_pct if regime_snapshot else None),
+                    regime_volatility_pct=(
+                        regime_snapshot.realised_volatility_pct
+                        if regime_snapshot else None))
                 st.success(f"{ticker} recorded as {decision}."); st.rerun()
 
     history=repo.history(account.id); x=forward_test_summary(history)

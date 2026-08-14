@@ -17,6 +17,14 @@ CREATE TABLE IF NOT EXISTS paper_forward_tests (
  reason TEXT,
  market_regime TEXT,
  volatility_regime TEXT,
+ trend_strength TEXT,
+ regime_benchmark TEXT,
+ regime_benchmark_price REAL,
+ regime_ma50 REAL,
+ regime_ma200 REAL,
+ regime_price_vs_ma50_pct REAL,
+ regime_price_vs_ma200_pct REAL,
+ regime_volatility_pct REAL,
  recorded_at TEXT NOT NULL,
  linked_order_id INTEGER
 );
@@ -45,33 +53,57 @@ class ForwardTestRepository:
             c.executescript(SCHEMA)
             columns={row["name"] for row in c.execute(
                 "PRAGMA table_info(paper_forward_tests)").fetchall()}
-            for name in ("market_regime","volatility_regime"):
+            migrations={
+                "market_regime":"TEXT",
+                "volatility_regime":"TEXT",
+                "trend_strength":"TEXT",
+                "regime_benchmark":"TEXT",
+                "regime_benchmark_price":"REAL",
+                "regime_ma50":"REAL",
+                "regime_ma200":"REAL",
+                "regime_price_vs_ma50_pct":"REAL",
+                "regime_price_vs_ma200_pct":"REAL",
+                "regime_volatility_pct":"REAL",
+            }
+            for name,sql_type in migrations.items():
                 if name not in columns:
                     c.execute(
-                        f"ALTER TABLE paper_forward_tests ADD COLUMN {name} TEXT")
+                        f"ALTER TABLE paper_forward_tests ADD COLUMN {name} {sql_type}")
 
     def record(self,*,account_id,ticker,decision,atlas_score=None,
                confidence=None,market_price=None,signal=None,reason=None,
-               market_regime=None,volatility_regime=None,linked_order_id=None):
+               market_regime=None,volatility_regime=None,trend_strength=None,
+               regime_benchmark=None,regime_benchmark_price=None,
+               regime_ma50=None,regime_ma200=None,
+               regime_price_vs_ma50_pct=None,regime_price_vs_ma200_pct=None,
+               regime_volatility_pct=None,linked_order_id=None):
         decision=str(decision).upper().strip()
         if decision not in {"TAKEN","SKIPPED","WATCH"}:
             raise ValueError("decision must be TAKEN, SKIPPED or WATCH")
         with self.database.connect() as c:
             cur=c.execute("""INSERT INTO paper_forward_tests
             (account_id,ticker,decision,atlas_score,confidence,market_price,
-             signal,reason,market_regime,volatility_regime,recorded_at,linked_order_id)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+             signal,reason,market_regime,volatility_regime,trend_strength,
+             regime_benchmark,regime_benchmark_price,regime_ma50,regime_ma200,
+             regime_price_vs_ma50_pct,regime_price_vs_ma200_pct,
+             regime_volatility_pct,recorded_at,linked_order_id)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (int(account_id),ticker.upper().strip(),decision,atlas_score,
              confidence,market_price,signal,reason,market_regime,volatility_regime,
-             datetime.now(timezone.utc).isoformat(),linked_order_id))
+             trend_strength,regime_benchmark,regime_benchmark_price,regime_ma50,
+             regime_ma200,regime_price_vs_ma50_pct,regime_price_vs_ma200_pct,
+             regime_volatility_pct,datetime.now(timezone.utc).isoformat(),
+             linked_order_id))
             return int(cur.lastrowid)
 
     def history(self,account_id):
         with self.database.connect() as c:
             return pd.read_sql_query(
                 """SELECT id,ticker,decision,atlas_score,confidence,market_price,
-                signal,reason,market_regime,volatility_regime,
-                recorded_at,linked_order_id
+                signal,reason,market_regime,volatility_regime,trend_strength,
+                regime_benchmark,regime_benchmark_price,regime_ma50,regime_ma200,
+                regime_price_vs_ma50_pct,regime_price_vs_ma200_pct,
+                regime_volatility_pct,recorded_at,linked_order_id
                 FROM paper_forward_tests WHERE account_id=?
                 ORDER BY recorded_at DESC,id DESC""",
                 c,params=(int(account_id),))
@@ -175,6 +207,14 @@ class ForwardTestOutcomeRepository:
                     f.reason,
                     f.market_regime,
                     f.volatility_regime,
+                    f.trend_strength,
+                    f.regime_benchmark,
+                    f.regime_benchmark_price,
+                    f.regime_ma50,
+                    f.regime_ma200,
+                    f.regime_price_vs_ma50_pct,
+                    f.regime_price_vs_ma200_pct,
+                    f.regime_volatility_pct,
                     f.recorded_at,
                     o.horizon_days,
                     o.observed_price,
