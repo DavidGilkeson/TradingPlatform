@@ -7,6 +7,7 @@ from .journal_analytics import (
     performance_by_atlas_score, performance_by_confidence
 )
 from .journal_review import PaperTradeReviewRepository
+from .workflow import review_completeness
 
 def _ratio(v):
     if v is None: return "—"
@@ -82,12 +83,48 @@ def display_paper_journal_dashboard(db_path="data/paper_trading.db"):
     emotion=st.selectbox("Emotional state",["","Calm","Confident","Patient","FOMO","Anxious","Greedy","Frustrated","Revenge Trading","Other"],key="pj_emotion")
     worked=st.text_area("What worked?",value=existing.get("what_worked",""),key="pj_worked")
     wrong=st.text_area("What went wrong?",value=existing.get("what_went_wrong",""),key="pj_wrong")
-    lesson=st.text_area("Lesson learned",value=existing.get("lesson_learned",""),key="pj_lesson")
+    lesson=st.text_area(
+        "Lesson learned",
+        value=existing.get("lesson_learned",""),
+        key="pj_lesson",
+    )
+    review_cols=st.columns(2)
+    with review_cols[0]:
+        execution_rating=st.slider(
+            "Execution quality",
+            min_value=1,
+            max_value=10,
+            value=int(existing.get("execution_rating") or 5),
+            help="Rate how well you executed the plan, not whether the trade won.",
+            key="pj_execution_rating",
+        )
+    with review_cols[1]:
+        next_action=st.text_area(
+            "What will you do differently next time?",
+            value=existing.get("next_time_action",""),
+            key="pj_next_action",
+        )
+
+    draft_review={
+        "followed_plan":followed,
+        "emotional_state":emotion,
+        "what_worked":worked,
+        "what_went_wrong":wrong,
+        "lesson_learned":lesson,
+    }
+    completeness=review_completeness(draft_review)
+    st.progress(
+        completeness,
+        text=f"Review completeness: {completeness:.0%}",
+    )
+
     if st.button("Save Trade Review",type="primary",width="stretch",key="pj_save"):
         repo.save_review(
             account_id=account.id,trade_id=trade_id,followed_plan=followed,
             what_worked=worked,what_went_wrong=wrong,lesson_learned=lesson,
-            emotional_state=emotion
+            emotional_state=emotion,
+            execution_rating=execution_rating,
+            next_time_action=next_action,
         )
         st.success("Trade review saved.")
         st.rerun()

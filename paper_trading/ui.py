@@ -1,6 +1,8 @@
 from __future__ import annotations
 import pandas as pd
 from .scan_feed import resolve_streamlit_scan
+from .workflow import workflow_progress
+from .journal_review import PaperTradeReviewRepository
 import streamlit as st
 from .sprint_status_ui import display_paper_trading_system_status
 from .account import PaperAccountService
@@ -26,6 +28,40 @@ def display_paper_trading_dashboard(db_path="data/paper_trading.db", market_df: 
     # forget to pass market_df into this dashboard after a Streamlit rerun.
     market_df = resolve_streamlit_scan(market_df)
     st.header("💼 Atlas Paper Trading")
+
+    # Sprint 33: lightweight end-to-end workflow status.
+    try:
+        account_service=PaperAccountService(db_path)
+        active_account=account_service.active_account()
+        positions=account_service.repository.list_positions(active_account.id)
+        trades=account_service.repository.list_trades(active_account.id)
+        review_repo=PaperTradeReviewRepository(db_path)
+        latest_review=(
+            review_repo.get_review(int(trades[0].id))
+            if trades
+            else None
+        )
+        progress=workflow_progress(
+            has_scan=market_df is not None and not market_df.empty,
+            has_thesis=False,
+            has_risk_plan=False,
+            has_open_position=bool(positions),
+            has_completed_trade=bool(trades),
+            has_review=bool(latest_review),
+        )
+        st.progress(
+            progress["pct"],
+            text=(
+                f'Paper-trading workflow: {progress["completed"]}/'
+                f'{progress["total"]} stages completed'
+            ),
+        )
+        st.caption(
+            "Scanner → Thesis → Risk Plan → Paper Position → "
+            "Completed Trade → Review"
+        )
+    except Exception:
+        pass
     service = PaperAccountService(db_path)
     account = service.initialise_account()
 

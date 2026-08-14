@@ -1,25 +1,28 @@
-# Project Atlas — Sprint 32.9
+# Project Atlas — Sprint 33.0
 
-Decision Support Overlay is live.
+Paper Trading Workflow & Trade Journal refinement is live.
 
-The Paper Order Ticket now surfaces forward-tested regime evidence immediately
-beside a proposed trade.
+This sprint starts joining the full Atlas paper-trading loop into one process:
 
-It displays:
-- current market regime
-- current volatility regime
-- overall regime-evidence assessment
-- favourable evidence messages
-- caution messages when matching resolved evidence has underperformed SPY
-- insufficient-evidence messages when the sample is still too small
+Scanner → Trade Thesis → Risk Plan → Paper Position → Completed Trade →
+Post-Trade Review
 
-The initial decision-support horizon is five trading days and retains the
-minimum five-observation evidence threshold from cohort validation.
+New:
+- workflow progress strip on the Paper Trading dashboard
+- richer post-trade review
+- execution-quality rating from 1–10
+- "what will you do differently next time?" action field
+- review-completeness indicator
+- safe database migration for existing paper-trading databases
 
-Important: this overlay is advisory. It does not automatically place, reject,
-block or resize a paper order. Atlas is still collecting prospective evidence
-before regime statistics are allowed to influence execution rules.
+The execution-quality rating deliberately measures process quality rather than
+whether a trade made money. A profitable trade can still be poorly executed,
+and a losing trade can still have followed the plan correctly.
 
-Next candidate: Sprint 33 — Paper Trading Workflow & Trade Journal refinement,
-bringing the scanner, decision support, order, thesis and post-trade review
-into one cleaner workflow.
+This builds on the existing reason, notes, confidence, risk checks, simulated
+order confirmation, entry intelligence snapshots, completed-trade analytics,
+calibration and regime-aware decision support.
+
+Next: Sprint 33.1 — persist a structured pre-trade thesis and risk plan so the
+workflow can automatically compare what was planned before entry with what
+actually happened after exit.
