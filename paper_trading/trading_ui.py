@@ -13,6 +13,7 @@ from .one_click import (
     consume_paper_trade_intent,
 )
 from .orders import PaperOrderService
+from .dynamic_ticker import scan_tickers, valid_scan_price
 from .portfolio_guardrails import (
     GuardrailSettings,
     evaluate_proposed_buy_guardrails,
@@ -83,67 +84,100 @@ def display_order_ticket(
     account_service = PaperAccountService(db_path)
     account = account_service.initialise_account()
 
-    tickers: list[str] = []
-    if (
-        market_df is not None
-        and not market_df.empty
-        and "Ticker" in market_df.columns
-    ):
-        tickers = sorted(
-            market_df["Ticker"]
-            .dropna()
-            .astype(str)
-            .str.upper()
-            .unique()
-            .tolist()
-        )
+    scan_ticker_options = scan_tickers(market_df)
 
     intent = consume_paper_trade_intent()
-    intent_ticker = intent.get("ticker") if intent else None
+    intent_ticker = (
+        str(intent.get("ticker", "")).upper().strip()
+        if intent
+        else ""
+    )
 
-    if intent_ticker and intent_ticker not in tickers:
-        tickers = [intent_ticker] + tickers
+    open_positions = account_service.repository.list_positions(account.id)
+    position_tickers = [
+        position.ticker.upper().strip()
+        for position in open_positions
+    ]
 
-    ticker_options = tickers or ["AAPL"]
+    ticker_options = list(
+        dict.fromkeys(
+            [
+                ticker
+                for ticker in (
+                    ([intent_ticker] if intent_ticker else [])
+                    + scan_ticker_options
+                    + position_tickers
+                )
+                if ticker
+            ]
+        )
+    )
 
-    default_index = 0
-    if intent_ticker and intent_ticker in ticker_options:
-        default_index = ticker_options.index(intent_ticker)
+    if not ticker_options:
+        st.error(
+            "No ticker data is available. Run **Scan Market** first so Atlas "
+            "can load current prices into the Paper Order Ticket."
+        )
+        return
+
+    default_index = (
+        ticker_options.index(intent_ticker)
+        if intent_ticker in ticker_options
+        else 0
+    )
 
     ticker = st.selectbox(
-        "Ticker",
+        "Ticker — click and type to search",
         options=ticker_options,
         index=default_index,
         key="paper_order_ticker",
+        help=(
+            "Search any ticker from the latest Atlas scan. "
+            "The list preserves Atlas scan order instead of forcing AAPL "
+            "to the top alphabetically."
+        ),
     )
 
     position_map = {
-        position.ticker: position
-        for position in account_service.repository.list_positions(account.id)
+        position.ticker.upper().strip(): position
+        for position in open_positions
     }
     current_position = position_map.get(ticker)
 
-    suggested_price = _latest_price(ticker, market_df)
-    if suggested_price is None:
-        suggested_price = (
-            current_position.current_price
-            if current_position is not None
-            else 100.0
-        )
+    suggested_price = valid_scan_price(ticker, market_df)
+    has_valid_scan_price = suggested_price is not None
 
     context = _stock_context(ticker, market_df)
+    atlas_score = context.get("Atlas Score", context.get("Score"))
+    atlas_verdict = context.get(
+        "Atlas Verdict",
+        context.get("Signal", "—"),
+    )
 
-    metric1, metric2, metric3, metric4 = st.columns(4)
-    metric1.metric("Market Price", f"${suggested_price:,.2f}")
+    metric1, metric2, metric3, metric4, metric5 = st.columns(5)
+    metric1.metric(
+        "Market Price",
+        "Unavailable"
+        if suggested_price is None
+        else f"${suggested_price:,.2f}",
+    )
     metric2.metric("Cash", f"${account.cash:,.2f}")
     metric3.metric(
         "Shares Held",
         f"{current_position.shares:,.4f}" if current_position else "0",
     )
     metric4.metric(
-        "Atlas Verdict",
-        str(context.get("Atlas Verdict", context.get("Signal", "—"))),
+        "Atlas Score",
+        "—" if atlas_score is None else str(atlas_score),
     )
+    metric5.metric("Atlas Verdict", str(atlas_verdict))
+
+    if not has_valid_scan_price:
+        st.error(
+            f"Atlas does not have a valid scan price for **{ticker}**. "
+            "Run a fresh market scan or choose another scanned ticker. "
+            "Paper orders are disabled until a valid price is available."
+        )
 
     ticket_col, settings_col = st.columns([1.5, 1])
 
@@ -196,10 +230,15 @@ def display_order_ticket(
         market_price = st.number_input(
             "Execution reference price",
             min_value=0.01,
-            value=float(suggested_price),
+            value=(
+                float(suggested_price)
+                if suggested_price is not None
+                else 0.01
+            ),
             step=0.01,
             format="%.2f",
             key=f"paper_market_price_{ticker}",
+            disabled=not has_valid_scan_price,
         )
 
         default_reason = (
@@ -255,7 +294,7 @@ def display_order_ticket(
                 value=float(default_stop),
                 step=0.01,
                 format="%.2f",
-                key="paper_risk_stop",
+                key=f"paper_risk_stop_{ticker}",
             )
 
             target_price = st.number_input(
@@ -264,7 +303,7 @@ def display_order_ticket(
                 value=float(default_target),
                 step=0.01,
                 format="%.2f",
-                key="paper_risk_target",
+                key=f"paper_risk_target_{ticker}",
             )
 
             try:
@@ -321,7 +360,7 @@ def display_order_ticket(
                 if risk_plan.recommended_shares > 0:
                     st.button(
                         "Use Suggested Position Size",
-                        key="paper_use_risk_size",
+                        key=f"paper_use_risk_size_{ticker}",
                         width="stretch",
                         on_click=_apply_suggested_shares,
                         args=(float(risk_plan.recommended_shares),),
@@ -443,7 +482,6 @@ def display_order_ticket(
             key="paper_trade_confidence",
         )
 
-        atlas_score = context.get("Atlas Score", context.get("Score"))
         regime = derive_regime_from_context(context)
 
         scorecard = None
@@ -515,7 +553,11 @@ def display_order_ticket(
             f"Place Paper {side}",
             type="primary",
             width="stretch",
-            disabled=(not confirmed) or risk_blocked,
+            disabled=(
+                (not confirmed)
+                or risk_blocked
+                or (not has_valid_scan_price)
+            ),
             key="place_paper_order",
         ):
             order_service = PaperOrderService(
