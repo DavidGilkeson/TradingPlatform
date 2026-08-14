@@ -1,32 +1,26 @@
-# Project Atlas — Sprint 32.7.3
+# Project Atlas — Sprint 32.8
 
-Paper Trading Scan Feed Fix.
+Regime-Aware Forward Validation is live.
 
-The ticker and live-price fallback from Sprint 32.7.2 worked, but the latest
-Atlas scanner DataFrame still was not consistently reaching Paper Trading.
-That is why scanned symbols could show a real live price while Atlas Score and
-Atlas Verdict remained blank.
+Atlas can now turn the entry-time regime snapshots collected in Sprints
+32.6–32.7 into evidence summaries.
 
-Sprint 32.7.3 adds a canonical Streamlit scan feed:
+New validation:
+- strongest evidence-ready market regime
+- weakest evidence-ready market regime
+- strongest evidence-ready volatility regime
+- weakest evidence-ready volatility regime
+- Market × Volatility evidence matrix
+- regime-specific benchmark edge
+- favourable / caution / insufficient-evidence classifications
+- minimum sample-size protection before a regime is treated as evidence-ready
 
-- latest market scan can be published into `st.session_state`
-- Paper Trading automatically recovers the canonical scan after reruns
-- compatibility recovery checks common older session-state keys
-- a final compatibility scan can detect any session-state DataFrame with a
-  `Ticker` column
-- explicitly passed `market_df` remains the highest-priority source
-- scan DataFrame is copied before persistence so display filtering cannot
-  mutate the canonical result
+The analysis remains descriptive. Atlas does not automatically place, block or
+size a trade merely because a regime has historically been strong or weak.
 
-IMPORTANT:
-The Sprint package does not contain the user's top-level `app.py`.
-See `APP_PY_PATCH_32_7_3.txt` for the two small app.py integration changes.
-The canonical app flow should call:
+This is deliberate: forward-test samples need to grow before regime evidence
+should influence execution rules.
 
-    publish_scan_to_streamlit(df)
-
-after a successful scan and pass `market_df=df` to the Paper Trading dashboard
-when convenient.
-
-Once connected, Paper Trading receives the same Score, Signal/Verdict, moving
-averages, RSI and other scan context used by the rest of Atlas.
+Next candidate: Sprint 32.9 — Decision Support Overlay, which can surface
+regime evidence beside a proposed paper trade without automatically executing
+or blocking it.

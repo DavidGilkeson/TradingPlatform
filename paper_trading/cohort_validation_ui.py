@@ -12,6 +12,10 @@ from .cohort_validation import (
     market_regime_validation,
     volatility_regime_validation,
 )
+from .regime_validation import (
+    regime_leaders,
+    regime_evidence_matrix,
+)
 
 
 def _show_table(table):
@@ -92,6 +96,42 @@ def display_cohort_validation(*,db_path="data/paper_trading.db"):
 
     st.markdown("#### Decision Cohorts")
     _show_table(decision_table)
+
+    st.markdown("#### Regime-Aware Validation")
+    leaders=regime_leaders(outcomes)
+    market_best=leaders["market"]["best"]
+    market_worst=leaders["market"]["worst"]
+    volatility_best=leaders["volatility"]["best"]
+    volatility_worst=leaders["volatility"]["worst"]
+
+    leader_cols=st.columns(4)
+    leader_cols[0].metric(
+        "Strongest Market Regime",
+        market_best["regime"] if market_best else "Need more evidence",
+        None if not market_best else f'{market_best["avg_excess_return"]:+.2f}% vs SPY',
+    )
+    leader_cols[1].metric(
+        "Weakest Market Regime",
+        market_worst["regime"] if market_worst else "Need more evidence",
+        None if not market_worst else f'{market_worst["avg_excess_return"]:+.2f}% vs SPY',
+    )
+    leader_cols[2].metric(
+        "Strongest Volatility",
+        volatility_best["regime"] if volatility_best else "Need more evidence",
+        None if not volatility_best else f'{volatility_best["avg_excess_return"]:+.2f}% vs SPY',
+    )
+    leader_cols[3].metric(
+        "Weakest Volatility",
+        volatility_worst["regime"] if volatility_worst else "Need more evidence",
+        None if not volatility_worst else f'{volatility_worst["avg_excess_return"]:+.2f}% vs SPY',
+    )
+
+    matrix=regime_evidence_matrix(outcomes)
+    st.markdown("##### Market × Volatility Evidence")
+    if matrix.empty:
+        st.info("No combined regime observations are resolved yet.")
+    else:
+        _show_table(matrix)
 
     st.markdown("#### Market Regimes")
     market_table=market_regime_validation(outcomes)
