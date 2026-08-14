@@ -14,6 +14,11 @@ from .one_click import (
 )
 from .orders import PaperOrderService
 from .dynamic_ticker import scan_tickers, valid_scan_price
+from .ticker_market_data import (
+    build_ticker_options,
+    latest_live_price,
+    load_local_ticker_universe,
+)
 from .portfolio_guardrails import (
     GuardrailSettings,
     evaluate_proposed_buy_guardrails,
@@ -99,24 +104,19 @@ def display_order_ticket(
         for position in open_positions
     ]
 
-    ticker_options = list(
-        dict.fromkeys(
-            [
-                ticker
-                for ticker in (
-                    ([intent_ticker] if intent_ticker else [])
-                    + scan_ticker_options
-                    + position_tickers
-                )
-                if ticker
-            ]
-        )
+    local_tickers = load_local_ticker_universe()
+
+    ticker_options = build_ticker_options(
+        scan_tickers=scan_ticker_options,
+        local_tickers=local_tickers,
+        position_tickers=position_tickers,
+        intent_ticker=intent_ticker or None,
     )
 
     if not ticker_options:
         st.error(
-            "No ticker data is available. Run **Scan Market** first so Atlas "
-            "can load current prices into the Paper Order Ticket."
+            "Atlas could not find a ticker universe. Run **Scan Market** or "
+            "make sure `data/sp500.csv` exists."
         )
         return
 
@@ -144,8 +144,26 @@ def display_order_ticket(
     }
     current_position = position_map.get(ticker)
 
-    suggested_price = valid_scan_price(ticker, market_df)
-    has_valid_scan_price = suggested_price is not None
+    scan_price = valid_scan_price(ticker, market_df)
+
+    # If the current scan DataFrame is unavailable (for example after a
+    # Streamlit rerun or when no cache exists), fetch a real recent market
+    # price instead of falling back to a fake $100 value.
+    live_price = None
+    if scan_price is None:
+        with st.spinner(f"Loading latest market price for {ticker}..."):
+            live_price = latest_live_price(ticker)
+
+    suggested_price = scan_price if scan_price is not None else live_price
+    has_valid_market_price = suggested_price is not None
+
+    price_source = (
+        "Atlas scan"
+        if scan_price is not None
+        else "Live market data"
+        if live_price is not None
+        else "Unavailable"
+    )
 
     context = _stock_context(ticker, market_df)
     atlas_score = context.get("Atlas Score", context.get("Score"))
@@ -160,6 +178,7 @@ def display_order_ticket(
         "Unavailable"
         if suggested_price is None
         else f"${suggested_price:,.2f}",
+        help=f"Price source: {price_source}",
     )
     metric2.metric("Cash", f"${account.cash:,.2f}")
     metric3.metric(
@@ -172,11 +191,18 @@ def display_order_ticket(
     )
     metric5.metric("Atlas Verdict", str(atlas_verdict))
 
-    if not has_valid_scan_price:
+    if scan_price is None and live_price is not None:
+        st.info(
+            f"**{ticker}** is not present in the current scan data passed to "
+            f"Paper Trading, so Atlas loaded a real recent market price "
+            f"(${live_price:,.2f}) directly. Atlas Score/Verdict will appear "
+            "after a fresh scan includes this ticker."
+        )
+    elif not has_valid_market_price:
         st.error(
-            f"Atlas does not have a valid scan price for **{ticker}**. "
-            "Run a fresh market scan or choose another scanned ticker. "
-            "Paper orders are disabled until a valid price is available."
+            f"Atlas could not obtain a valid market price for **{ticker}**. "
+            "Run a fresh market scan or try again when market data is available. "
+            "Paper orders remain disabled."
         )
 
     ticket_col, settings_col = st.columns([1.5, 1])
@@ -238,7 +264,7 @@ def display_order_ticket(
             step=0.01,
             format="%.2f",
             key=f"paper_market_price_{ticker}",
-            disabled=not has_valid_scan_price,
+            disabled=not has_valid_market_price,
         )
 
         default_reason = (
@@ -556,7 +582,7 @@ def display_order_ticket(
             disabled=(
                 (not confirmed)
                 or risk_blocked
-                or (not has_valid_scan_price)
+                or (not has_valid_market_price)
             ),
             key="place_paper_order",
         ):

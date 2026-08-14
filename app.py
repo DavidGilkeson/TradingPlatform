@@ -61,7 +61,10 @@ from historical_scans import (
     save_historical_scan,
 )
 from opportunity_center import display_opportunity_center
-from paper_trading_ui import display_paper_trading_dashboard
+from paper_trading_ui import (
+        display_paper_trading_dashboard,
+        publish_scan_to_streamlit,
+    )
 from watchlist import (
     add_stock,
     load_watchlist,
@@ -348,7 +351,10 @@ if "scan_results" in st.session_state:
 
     elif data_source == "live":
         st.success(f"🟢 Fresh market scan complete — {len(df)} stocks analysed.")
-
+        
+        
+        publish_scan_to_streamlit(df)
+        
     else:
         st.info(
             f"Using market data stored in this session — {len(df)} stocks available."
@@ -779,8 +785,10 @@ if "scan_results" in st.session_state:
     # ==================================================
     with paper_tab:
         display_paper_trading_dashboard(
-            db_path="data/paper_trading.db",
-        )
+        db_path="data/paper_trading.db",
+        market_df=df if "df" in locals() else None,
+    )
+
 
     # ==================================================
     # TRADE JOURNAL TAB

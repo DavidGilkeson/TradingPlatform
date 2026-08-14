@@ -1,5 +1,6 @@
 from __future__ import annotations
 import pandas as pd
+from .scan_feed import resolve_streamlit_scan
 import streamlit as st
 from .sprint_status_ui import display_paper_trading_system_status
 from .account import PaperAccountService
@@ -21,6 +22,9 @@ from .portfolio_ui import display_live_portfolio_dashboard
 from .trading_ui import display_order_history, display_order_ticket
 
 def display_paper_trading_dashboard(db_path="data/paper_trading.db", market_df: pd.DataFrame | None=None):
+    # Recover the canonical/current scan even when older app.py versions
+    # forget to pass market_df into this dashboard after a Streamlit rerun.
+    market_df = resolve_streamlit_scan(market_df)
     st.header("💼 Atlas Paper Trading")
     service = PaperAccountService(db_path)
     account = service.initialise_account()
