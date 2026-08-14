@@ -28,6 +28,8 @@ from .trade_scorecard import historical_setup_scorecard
 from .trade_scorecard_ui import display_trade_scorecard
 from .order_intelligence import derive_regime_from_context
 from .intelligence_snapshot import IntelligenceSnapshotRepository
+from .forward_testing import ForwardTestOutcomeRepository
+from .decision_support import build_decision_support
 
 
 def _latest_price(
@@ -204,6 +206,65 @@ def display_order_ticket(
             "Run a fresh market scan or try again when market data is available. "
             "Paper orders remain disabled."
         )
+
+    # Sprint 32.9: show forward-tested regime evidence beside the proposed
+    # order. This is advisory only and never automatically places or blocks it.
+    current_regime = derive_regime_from_context(context)
+    current_market_regime = (
+        current_regime.get("trend_regime")
+        if isinstance(current_regime, dict)
+        else None
+    )
+    current_volatility_regime = (
+        current_regime.get("volatility_regime")
+        if isinstance(current_regime, dict)
+        else None
+    )
+
+    try:
+        resolved_outcomes = ForwardTestOutcomeRepository(db_path).outcomes(
+            account.id
+        )
+        support = build_decision_support(
+            resolved_outcomes,
+            market_regime=current_market_regime,
+            volatility_regime=current_volatility_regime,
+            horizon_days=5,
+        )
+    except Exception:
+        support = {"overall":"Insufficient evidence","evidence":[]}
+
+    st.markdown("##### 🧭 Forward-Test Decision Support")
+    support_cols=st.columns(3)
+    support_cols[0].metric(
+        "Current Market Regime",
+        current_market_regime or "Unknown",
+    )
+    support_cols[1].metric(
+        "Current Volatility",
+        current_volatility_regime or "Unknown",
+    )
+    support_cols[2].metric("Regime Evidence",support["overall"])
+
+    for evidence in support["evidence"]:
+        message=evidence["message"]
+        if evidence["level"]=="caution":
+            st.warning(message)
+        elif evidence["level"]=="favourable":
+            st.success(message)
+        else:
+            st.info(message)
+
+    if not support["evidence"]:
+        st.info(
+            "Atlas does not yet have enough matching resolved forward-test "
+            "evidence for this market environment."
+        )
+
+    st.caption(
+        "Decision Support is evidence only. It does not automatically place, "
+        "block or resize this paper trade."
+    )
 
     ticket_col, settings_col = st.columns([1.5, 1])
 

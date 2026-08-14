@@ -1,26 +1,25 @@
-# Project Atlas — Sprint 32.8
+# Project Atlas — Sprint 32.9
 
-Regime-Aware Forward Validation is live.
+Decision Support Overlay is live.
 
-Atlas can now turn the entry-time regime snapshots collected in Sprints
-32.6–32.7 into evidence summaries.
+The Paper Order Ticket now surfaces forward-tested regime evidence immediately
+beside a proposed trade.
 
-New validation:
-- strongest evidence-ready market regime
-- weakest evidence-ready market regime
-- strongest evidence-ready volatility regime
-- weakest evidence-ready volatility regime
-- Market × Volatility evidence matrix
-- regime-specific benchmark edge
-- favourable / caution / insufficient-evidence classifications
-- minimum sample-size protection before a regime is treated as evidence-ready
+It displays:
+- current market regime
+- current volatility regime
+- overall regime-evidence assessment
+- favourable evidence messages
+- caution messages when matching resolved evidence has underperformed SPY
+- insufficient-evidence messages when the sample is still too small
 
-The analysis remains descriptive. Atlas does not automatically place, block or
-size a trade merely because a regime has historically been strong or weak.
+The initial decision-support horizon is five trading days and retains the
+minimum five-observation evidence threshold from cohort validation.
 
-This is deliberate: forward-test samples need to grow before regime evidence
-should influence execution rules.
+Important: this overlay is advisory. It does not automatically place, reject,
+block or resize a paper order. Atlas is still collecting prospective evidence
+before regime statistics are allowed to influence execution rules.
 
-Next candidate: Sprint 32.9 — Decision Support Overlay, which can surface
-regime evidence beside a proposed paper trade without automatically executing
-or blocking it.
+Next candidate: Sprint 33 — Paper Trading Workflow & Trade Journal refinement,
+bringing the scanner, decision support, order, thesis and post-trade review
+into one cleaner workflow.
