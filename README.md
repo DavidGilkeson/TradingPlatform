@@ -1,27 +1,24 @@
-# Project Atlas — Sprint 32.3
+# Project Atlas — Sprint 32.5
 
-Automated Forward-Test Outcomes & Benchmarking is live.
+Cohort Validation is live.
 
-Atlas now identifies missing 1, 3, 5, 10 and 20 business-day forward-test
-observations that are due.
+Atlas now decomposes prospective forward-test results by:
 
-The Forward Test dashboard can automatically download the first available
-market close on/after the due date and save the outcome. Exchange holidays are
-handled by searching forward for the next available market session.
+- Atlas Score band
+- confidence band
+- TAKEN / SKIPPED decision cohort
+- observation horizon
 
-SPY is recorded alongside each automatic observation as the default broad US
-equity benchmark.
+Each cohort reports sample size, average return, positive rate, average excess
+return versus SPY, benchmark beat rate, Decision Edge and Evidence Ready status.
 
-Atlas now calculates:
+The dashboard also identifies the strongest evidence-qualified Atlas Score
+cohort and measures the correlation between Atlas Score and realised return at
+each forward horizon.
 
-- stock forward return
-- SPY benchmark return
-- excess return = stock return - benchmark return
-- benchmark beat rate
-- taken versus skipped decision edge
+This helps answer whether stronger Atlas scores are actually associated with
+better future outcomes rather than assuming the scoring model is meaningful.
 
-Older Sprint 32.2 databases are migrated in place with the new benchmark
-columns.
-
-Next: Sprint 32.4 — Forward-Test Validation Scorecard, cohort statistics and
-minimum-sample safeguards.
+Next: Sprint 32.6 — capture market regime at the moment each forward-test
+decision is recorded and validate Atlas separately across bullish, bearish,
+volatile and quiet conditions.

@@ -15,6 +15,8 @@ from .setup_intelligence_ui import display_setup_intelligence
 from .outcome_calibration_ui import display_outcome_calibration
 from .intelligence_health_ui import display_intelligence_health
 from .forward_testing_ui import display_forward_testing
+from .forward_validation_ui import display_forward_validation
+from .cohort_validation_ui import display_cohort_validation
 from .portfolio_ui import display_live_portfolio_dashboard
 from .trading_ui import display_order_history, display_order_ticket
 
@@ -47,6 +49,8 @@ def display_paper_trading_dashboard(db_path="data/paper_trading.db", market_df: 
     with intelligence_tab:
         intelligence_sections = st.tabs([
             "❤️ Health",
+            "🏁 Validation",
+            "🔬 Cohorts",
             "📈 Performance",
             "🧠 Patterns",
             "🌦️ Regimes",
@@ -57,16 +61,20 @@ def display_paper_trading_dashboard(db_path="data/paper_trading.db", market_df: 
         with intelligence_sections[0]:
             display_intelligence_health(db_path=db_path)
         with intelligence_sections[1]:
-            display_performance_dashboard(db_path=db_path)
+            display_forward_validation(db_path=db_path)
         with intelligence_sections[2]:
-            display_trading_intelligence(db_path=db_path)
+            display_cohort_validation(db_path=db_path)
         with intelligence_sections[3]:
-            display_regime_intelligence(db_path=db_path)
+            display_performance_dashboard(db_path=db_path)
         with intelligence_sections[4]:
-            display_setup_intelligence(db_path=db_path)
+            display_trading_intelligence(db_path=db_path)
         with intelligence_sections[5]:
-            display_outcome_calibration(db_path=db_path)
+            display_regime_intelligence(db_path=db_path)
         with intelligence_sections[6]:
+            display_setup_intelligence(db_path=db_path)
+        with intelligence_sections[7]:
+            display_outcome_calibration(db_path=db_path)
+        with intelligence_sections[8]:
             display_paper_journal_dashboard(db_path=db_path)
 
     with history_tab:
