@@ -1,27 +1,27 @@
-# Project Atlas — Sprint 32.2
+# Project Atlas — Sprint 32.3
 
-Forward-Test Outcome Tracking is live.
+Automated Forward-Test Outcomes & Benchmarking is live.
 
-Atlas can now preserve future observations for every prospectively recorded
-TAKEN, SKIPPED or WATCH opportunity.
+Atlas now identifies missing 1, 3, 5, 10 and 20 business-day forward-test
+observations that are due.
 
-Supported observation horizons:
-- 1 trading day
-- 3 trading days
-- 5 trading days
-- 10 trading days
-- 20 trading days
+The Forward Test dashboard can automatically download the first available
+market close on/after the due date and save the outcome. Exchange holidays are
+handled by searching forward for the next available market session.
 
-For each observation Atlas calculates the percentage move from the original
-recorded market price.
+SPY is recorded alongside each automatic observation as the default broad US
+equity benchmark.
 
-The Forward Test dashboard now compares TAKEN versus SKIPPED opportunities by
-horizon and reports a Decision Edge:
+Atlas now calculates:
 
-Taken average return - Skipped average return
+- stock forward return
+- SPY benchmark return
+- excess return = stock return - benchmark return
+- benchmark beat rate
+- taken versus skipped decision edge
 
-This is the first direct prospective measurement of whether Atlas/user
-selection decisions added value.
+Older Sprint 32.2 databases are migrated in place with the new benchmark
+columns.
 
-Next: Sprint 32.3 — automate due-outcome collection from market data and add
-benchmark-relative performance.
+Next: Sprint 32.4 — Forward-Test Validation Scorecard, cohort statistics and
+minimum-sample safeguards.

@@ -7,6 +7,9 @@ from .forward_testing import (
     forward_test_summary,
     outcome_comparison,
     decision_quality,
+    due_forward_test_observations,
+    update_due_forward_outcomes,
+    benchmark_comparison,
 )
 
 def display_forward_testing(*,db_path="data/paper_trading.db"):
@@ -48,6 +51,40 @@ def display_forward_testing(*,db_path="data/paper_trading.db"):
     st.divider()
     st.markdown("### 📍 Outcome Tracking")
     outcome_repo = ForwardTestOutcomeRepository(db_path)
+    existing_outcomes = outcome_repo.outcomes(account.id)
+    due = due_forward_test_observations(history, existing_outcomes)
+
+    auto_cols = st.columns([2, 1])
+    auto_cols[0].metric("Due Automatic Observations", len(due))
+    if auto_cols[1].button(
+        "Update Due Outcomes",
+        type="primary",
+        key="ft_auto_update",
+        disabled=due.empty,
+    ):
+        with st.spinner("Downloading due stock and SPY benchmark prices..."):
+            result = update_due_forward_outcomes(
+                db_path=db_path,
+                account_id=account.id,
+                benchmark_ticker="SPY",
+            )
+        if result["updated"]:
+            st.success(
+                f'Updated {result["updated"]} of {result["due"]} due observations.'
+            )
+        if result["failed"]:
+            st.warning(
+                f'{len(result["failed"])} observation(s) could not be updated.'
+            )
+            st.dataframe(result["failed"],width="stretch",hide_index=True)
+        if not result["updated"] and not result["failed"]:
+            st.info("No observations are due yet.")
+        st.rerun()
+
+    st.caption(
+        "Automatic updates use the first available market close on or after "
+        "each due business-day horizon and compare the stock with SPY."
+    )
 
     if history.empty:
         st.info("Record a forward-test decision before adding outcomes.")
@@ -162,6 +199,28 @@ def display_forward_testing(*,db_path="data/paper_trading.db"):
                     "Taken and skipped opportunities currently have the same "
                     "average return at this horizon."
                 )
+
+        benchmark = benchmark_comparison(outcomes)
+        st.markdown("#### Benchmark-Relative Performance")
+        if benchmark.empty:
+            st.info(
+                "Automatic SPY benchmark data will appear after due outcomes "
+                "have been updated."
+            )
+        else:
+            st.dataframe(
+                benchmark,
+                width="stretch",
+                hide_index=True,
+                column_config={
+                    "Avg Excess Return": st.column_config.NumberColumn(
+                        format="%.2f%%"
+                    ),
+                    "Beat Benchmark Rate": st.column_config.NumberColumn(
+                        format="%.2f"
+                    ),
+                },
+            )
 
         st.markdown("#### Recorded Outcomes")
         st.dataframe(outcomes, width="stretch", hide_index=True)

@@ -26,6 +26,11 @@ CREATE TABLE IF NOT EXISTS paper_forward_test_outcomes (
  observed_price REAL NOT NULL CHECK(observed_price > 0),
  observed_at TEXT NOT NULL,
  return_pct REAL,
+ benchmark_ticker TEXT,
+ benchmark_entry_price REAL,
+ benchmark_observed_price REAL,
+ benchmark_return_pct REAL,
+ excess_return_pct REAL,
  UNIQUE(forward_test_id, horizon_days),
  FOREIGN KEY(forward_test_id) REFERENCES paper_forward_tests(id) ON DELETE CASCADE
 );
@@ -76,6 +81,25 @@ class ForwardTestOutcomeRepository:
         self.database = PaperTradingDatabase(db_path)
         with self.database.connect() as c:
             c.executescript(SCHEMA)
+            columns = {
+                row["name"]
+                for row in c.execute(
+                    "PRAGMA table_info(paper_forward_test_outcomes)"
+                ).fetchall()
+            }
+            migrations = {
+                "benchmark_ticker": "TEXT",
+                "benchmark_entry_price": "REAL",
+                "benchmark_observed_price": "REAL",
+                "benchmark_return_pct": "REAL",
+                "excess_return_pct": "REAL",
+            }
+            for name, sql_type in migrations.items():
+                if name not in columns:
+                    c.execute(
+                        f"ALTER TABLE paper_forward_test_outcomes "
+                        f"ADD COLUMN {name} {sql_type}"
+                    )
 
     def save_outcome(
         self,
@@ -143,7 +167,12 @@ class ForwardTestOutcomeRepository:
                     o.horizon_days,
                     o.observed_price,
                     o.observed_at,
-                    o.return_pct
+                    o.return_pct,
+                    o.benchmark_ticker,
+                    o.benchmark_entry_price,
+                    o.benchmark_observed_price,
+                    o.benchmark_return_pct,
+                    o.excess_return_pct
                 FROM paper_forward_tests f
                 JOIN paper_forward_test_outcomes o
                   ON o.forward_test_id=f.id
@@ -223,3 +252,214 @@ def decision_quality(frame, horizon_days):
         "taken_count": len(taken),
         "skipped_count": len(skipped),
     }
+
+
+STANDARD_FORWARD_HORIZONS = (1, 3, 5, 10, 20)
+
+
+def due_forward_test_observations(
+    decisions,
+    outcomes,
+    *,
+    now=None,
+    horizons=STANDARD_FORWARD_HORIZONS,
+):
+    """Find missing observations whose approximate trading-day horizon is due.
+
+    Business days are used for scheduling. Market-data resolution later chooses
+    the first available session on/after the due date, which safely handles
+    exchange holidays and weekends.
+    """
+    if decisions is None or decisions.empty:
+        return pd.DataFrame()
+
+    now = pd.Timestamp.now(tz="UTC") if now is None else pd.Timestamp(now)
+    if now.tzinfo is None:
+        now = now.tz_localize("UTC")
+    else:
+        now = now.tz_convert("UTC")
+
+    existing=set()
+    if outcomes is not None and not outcomes.empty:
+        existing={
+            (int(row["forward_test_id"]),int(row["horizon_days"]))
+            for _,row in outcomes.iterrows()
+        }
+
+    rows=[]
+    for _,decision in decisions.iterrows():
+        recorded=pd.Timestamp(decision["recorded_at"])
+        if recorded.tzinfo is None:
+            recorded=recorded.tz_localize("UTC")
+        else:
+            recorded=recorded.tz_convert("UTC")
+
+        start_day=recorded.normalize().tz_localize(None)
+        for horizon in horizons:
+            key=(int(decision["id"]),int(horizon))
+            if key in existing:
+                continue
+            due_day=start_day + pd.offsets.BDay(int(horizon))
+            due=pd.Timestamp(due_day).tz_localize("UTC")
+            if now.normalize() >= due:
+                rows.append({
+                    "forward_test_id":int(decision["id"]),
+                    "ticker":str(decision["ticker"]),
+                    "decision":str(decision["decision"]),
+                    "recorded_at":recorded.isoformat(),
+                    "horizon_days":int(horizon),
+                    "due_date":due.date().isoformat(),
+                })
+    return pd.DataFrame(rows)
+
+
+class YFinanceForwardMarketData:
+    """Small yfinance adapter isolated so outcome logic stays testable."""
+
+    def __init__(self, benchmark_ticker="SPY"):
+        self.benchmark_ticker=benchmark_ticker.upper().strip()
+
+    @staticmethod
+    def _yf():
+        try:
+            import yfinance as yf
+        except ImportError as exc:
+            raise RuntimeError(
+                "yfinance is required for automatic forward-test updates."
+            ) from exc
+        return yf
+
+    def close_on_or_after(self,ticker,date,max_calendar_days=7):
+        yf=self._yf()
+        start=pd.Timestamp(date).date()
+        end=(pd.Timestamp(date)+pd.Timedelta(days=max_calendar_days+1)).date()
+        data=yf.download(
+            ticker,
+            start=str(start),
+            end=str(end),
+            progress=False,
+            auto_adjust=False,
+            threads=False,
+        )
+        if data is None or data.empty:
+            raise ValueError(f"No market data found for {ticker} on/after {start}.")
+        close=data["Close"]
+        if isinstance(close,pd.DataFrame):
+            close=close.iloc[:,0]
+        close=pd.to_numeric(close,errors="coerce").dropna()
+        if close.empty:
+            raise ValueError(f"No closing price found for {ticker} on/after {start}.")
+        return float(close.iloc[0]),pd.Timestamp(close.index[0]).date().isoformat()
+
+    def benchmark_return(self,recorded_at,due_date):
+        entry,_=self.close_on_or_after(
+            self.benchmark_ticker,pd.Timestamp(recorded_at).date())
+        observed,observed_date=self.close_on_or_after(
+            self.benchmark_ticker,due_date)
+        result=((observed-entry)/entry)*100.0
+        return entry,observed,result,observed_date
+
+
+def update_due_forward_outcomes(
+    *,
+    db_path="data/paper_trading.db",
+    account_id,
+    market_data=None,
+    benchmark_ticker="SPY",
+    now=None,
+):
+    """Populate all currently due forward-test observations."""
+    decisions_repo=ForwardTestRepository(db_path)
+    outcomes_repo=ForwardTestOutcomeRepository(db_path)
+    decisions=decisions_repo.history(account_id)
+    current=outcomes_repo.outcomes(account_id)
+    due=due_forward_test_observations(decisions,current,now=now)
+
+    if due.empty:
+        return {"due":0,"updated":0,"failed":[]}
+
+    market_data=market_data or YFinanceForwardMarketData(benchmark_ticker)
+    updated=0
+    failed=[]
+
+    for _,item in due.iterrows():
+        try:
+            stock_price,stock_date=market_data.close_on_or_after(
+                item["ticker"],item["due_date"])
+            benchmark_entry,benchmark_price,benchmark_return,_ = (
+                market_data.benchmark_return(
+                    item["recorded_at"],item["due_date"])
+            )
+
+            # Save normal outcome first.
+            outcomes_repo.save_outcome(
+                forward_test_id=int(item["forward_test_id"]),
+                horizon_days=int(item["horizon_days"]),
+                observed_price=stock_price,
+                observed_at=stock_date,
+            )
+
+            with outcomes_repo.database.connect() as c:
+                row=c.execute(
+                    """SELECT return_pct FROM paper_forward_test_outcomes
+                    WHERE forward_test_id=? AND horizon_days=?""",
+                    (int(item["forward_test_id"]),int(item["horizon_days"])),
+                ).fetchone()
+                stock_return=(
+                    float(row["return_pct"])
+                    if row is not None and row["return_pct"] is not None
+                    else None
+                )
+                excess=(
+                    stock_return-benchmark_return
+                    if stock_return is not None else None
+                )
+                c.execute(
+                    """UPDATE paper_forward_test_outcomes SET
+                    benchmark_ticker=?,
+                    benchmark_entry_price=?,
+                    benchmark_observed_price=?,
+                    benchmark_return_pct=?,
+                    excess_return_pct=?
+                    WHERE forward_test_id=? AND horizon_days=?""",
+                    (
+                        market_data.benchmark_ticker,
+                        benchmark_entry,
+                        benchmark_price,
+                        benchmark_return,
+                        excess,
+                        int(item["forward_test_id"]),
+                        int(item["horizon_days"]),
+                    ),
+                )
+            updated+=1
+        except Exception as exc:
+            failed.append({
+                "forward_test_id":int(item["forward_test_id"]),
+                "ticker":item["ticker"],
+                "horizon_days":int(item["horizon_days"]),
+                "error":str(exc),
+            })
+
+    return {"due":len(due),"updated":updated,"failed":failed}
+
+
+def benchmark_comparison(frame):
+    if frame is None or frame.empty or "excess_return_pct" not in frame:
+        return pd.DataFrame()
+    d=frame.copy()
+    d["excess_return_pct"]=pd.to_numeric(
+        d["excess_return_pct"],errors="coerce")
+    d=d.dropna(subset=["excess_return_pct"])
+    if d.empty:return pd.DataFrame()
+    rows=[]
+    for (horizon,decision),g in d.groupby(["horizon_days","decision"]):
+        rows.append({
+            "Horizon Days":int(horizon),
+            "Decision":str(decision),
+            "Observations":len(g),
+            "Avg Excess Return":float(g["excess_return_pct"].mean()),
+            "Beat Benchmark Rate":float((g["excess_return_pct"]>0).mean()),
+        })
+    return pd.DataFrame(rows).sort_values(
+        ["Horizon Days","Decision"]).reset_index(drop=True)
