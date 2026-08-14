@@ -1,28 +1,33 @@
-# Project Atlas — Sprint 33.0
+# Project Atlas — Sprint 33.1
 
-Paper Trading Workflow & Trade Journal refinement is live.
+Structured Pre-Trade Thesis & Risk Plan is live.
 
-This sprint starts joining the full Atlas paper-trading loop into one process:
+Before a Paper BUY, Atlas now captures and permanently links the plan to the
+actual filled buy order:
 
-Scanner → Trade Thesis → Risk Plan → Paper Position → Completed Trade →
-Post-Trade Review
+- written trade thesis
+- thesis invalidation condition
+- actual filled entry price
+- stop-loss
+- take-profit target
+- planned shares
+- account risk %
+- maximum position %
+- minimum acceptable reward/risk
+- calculated planned reward/risk
+- trader confidence
+- Atlas score
+- entry-time market regime
+- entry-time volatility regime
 
-New:
-- workflow progress strip on the Paper Trading dashboard
-- richer post-trade review
-- execution-quality rating from 1–10
-- "what will you do differently next time?" action field
-- review-completeness indicator
-- safe database migration for existing paper-trading databases
+A BUY now requires a written thesis. This makes the journal useful for
+prospective learning rather than allowing the rationale to be reconstructed
+after seeing the outcome.
 
-The execution-quality rating deliberately measures process quality rather than
-whether a trade made money. A profitable trade can still be poorly executed,
-and a losing trade can still have followed the plan correctly.
+Trade plans are stored in `paper_trade_plans` and linked by `buy_order_id`.
+Existing databases are unaffected because the table is created lazily and
+safely.
 
-This builds on the existing reason, notes, confidence, risk checks, simulated
-order confirmation, entry intelligence snapshots, completed-trade analytics,
-calibration and regime-aware decision support.
-
-Next: Sprint 33.1 — persist a structured pre-trade thesis and risk plan so the
-workflow can automatically compare what was planned before entry with what
-actually happened after exit.
+Next: Sprint 33.2 — Plan vs Outcome Review. Link completed trades back to their
+entry plans and automatically show planned entry/stop/target/R:R beside actual
+return, P&L and post-trade execution review.

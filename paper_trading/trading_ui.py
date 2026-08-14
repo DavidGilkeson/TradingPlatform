@@ -30,6 +30,7 @@ from .order_intelligence import derive_regime_from_context
 from .intelligence_snapshot import IntelligenceSnapshotRepository
 from .forward_testing import ForwardTestOutcomeRepository
 from .decision_support import build_decision_support
+from .trade_plan import PaperTradePlanRepository, reward_risk
 
 
 def _latest_price(
@@ -550,6 +551,27 @@ def display_order_ticket(
             key="paper_trade_reason",
         )
 
+        thesis = ""
+        invalidation = ""
+        if side == "BUY":
+            st.markdown("##### 📝 Pre-Trade Thesis")
+            thesis = st.text_area(
+                "What is the trade thesis?",
+                value=default_reason,
+                placeholder=(
+                    "Example: Strong Atlas setup, price above key moving "
+                    "averages and momentum improving."
+                ),
+                key=f"paper_trade_thesis_{ticker}",
+            )
+            invalidation = st.text_input(
+                "What would invalidate the thesis?",
+                placeholder=(
+                    "Example: Daily close below support / stop-loss level."
+                ),
+                key=f"paper_trade_invalidation_{ticker}",
+            )
+
         notes = st.text_area(
             "Notes",
             value=(
@@ -596,6 +618,21 @@ def display_order_ticket(
                 )
             except ValueError:
                 scorecard = None
+
+        if side == "BUY":
+            planned_rr = reward_risk(
+                market_price,
+                stop_price,
+                target_price,
+            )
+            plan_metrics = st.columns(4)
+            plan_metrics[0].metric("Planned Entry",f"${market_price:,.2f}")
+            plan_metrics[1].metric("Stop",f"${stop_price:,.2f}")
+            plan_metrics[2].metric("Target",f"${target_price:,.2f}")
+            plan_metrics[3].metric(
+                "Planned R:R",
+                "—" if planned_rr is None else f"{planned_rr:.2f}:1",
+            )
 
         estimated_price = (
             market_price * (1 + slippage_pct)
@@ -644,6 +681,7 @@ def display_order_ticket(
                 (not confirmed)
                 or risk_blocked
                 or (not has_valid_market_price)
+                or (side == "BUY" and not thesis.strip())
             ),
             key="place_paper_order",
         ):
@@ -677,6 +715,30 @@ def display_order_ticket(
             except ValueError as error:
                 st.error(str(error))
             else:
+                if side == "BUY":
+                    PaperTradePlanRepository(db_path).save(
+                        account_id=execution.account_id,
+                        buy_order_id=execution.order_id,
+                        ticker=execution.ticker,
+                        thesis=thesis,
+                        invalidation=invalidation,
+                        entry_price=execution.filled_price,
+                        stop_price=stop_price,
+                        target_price=target_price,
+                        planned_shares=execution.shares,
+                        risk_pct=risk_pct,
+                        max_position_pct=max_position_pct,
+                        minimum_reward_risk=minimum_rr,
+                        confidence=confidence,
+                        atlas_score=(
+                            float(atlas_score)
+                            if atlas_score is not None and pd.notna(atlas_score)
+                            else None
+                        ),
+                        market_regime=regime.trend if regime else None,
+                        volatility_regime=regime.volatility if regime else None,
+                    )
+
                 if side == "BUY" and scorecard is not None:
                     IntelligenceSnapshotRepository(db_path).save(
                         order_id=execution.order_id,
