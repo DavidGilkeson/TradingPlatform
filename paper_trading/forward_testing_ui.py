@@ -28,6 +28,15 @@ def display_forward_testing(*,db_path="data/paper_trading.db"):
             confidence=st.number_input("Confidence",0.0,10.0,5.0,1.0,key="ft_confidence")
             price=st.number_input("Market Price",min_value=0.0,value=0.0,step=0.01,key="ft_price")
             signal=st.text_input("Signal",key="ft_signal")
+        regime_cols=st.columns(2)
+        with regime_cols[0]:
+            market_regime=st.selectbox(
+                "Market Regime",["Unknown","Bullish","Neutral","Bearish"],
+                key="ft_market_regime")
+        with regime_cols[1]:
+            volatility_regime=st.selectbox(
+                "Volatility Regime",["Unknown","Quiet","Normal","Volatile"],
+                key="ft_volatility_regime")
         reason=st.text_area("Why take, skip or watch this setup?",key="ft_reason")
         if st.button("Save Forward-Test Decision",type="primary",key="ft_save"):
             if not ticker: st.error("Enter a ticker first.")
@@ -35,7 +44,9 @@ def display_forward_testing(*,db_path="data/paper_trading.db"):
                 repo.record(account_id=account.id,ticker=ticker,decision=decision,
                     atlas_score=score,confidence=confidence,
                     market_price=price if price>0 else None,
-                    signal=signal or None,reason=reason or None)
+                    signal=signal or None,reason=reason or None,
+                    market_regime=None if market_regime=="Unknown" else market_regime,
+                    volatility_regime=None if volatility_regime=="Unknown" else volatility_regime)
                 st.success(f"{ticker} recorded as {decision}."); st.rerun()
 
     history=repo.history(account.id); x=forward_test_summary(history)

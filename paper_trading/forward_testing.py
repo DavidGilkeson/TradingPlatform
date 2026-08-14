@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS paper_forward_tests (
  market_price REAL,
  signal TEXT,
  reason TEXT,
+ market_regime TEXT,
+ volatility_regime TEXT,
  recorded_at TEXT NOT NULL,
  linked_order_id INTEGER
 );
@@ -39,21 +41,28 @@ CREATE TABLE IF NOT EXISTS paper_forward_test_outcomes (
 class ForwardTestRepository:
     def __init__(self,db_path="data/paper_trading.db"):
         self.database=PaperTradingDatabase(db_path)
-        with self.database.connect() as c: c.executescript(SCHEMA)
+        with self.database.connect() as c:
+            c.executescript(SCHEMA)
+            columns={row["name"] for row in c.execute(
+                "PRAGMA table_info(paper_forward_tests)").fetchall()}
+            for name in ("market_regime","volatility_regime"):
+                if name not in columns:
+                    c.execute(
+                        f"ALTER TABLE paper_forward_tests ADD COLUMN {name} TEXT")
 
     def record(self,*,account_id,ticker,decision,atlas_score=None,
                confidence=None,market_price=None,signal=None,reason=None,
-               linked_order_id=None):
+               market_regime=None,volatility_regime=None,linked_order_id=None):
         decision=str(decision).upper().strip()
         if decision not in {"TAKEN","SKIPPED","WATCH"}:
             raise ValueError("decision must be TAKEN, SKIPPED or WATCH")
         with self.database.connect() as c:
             cur=c.execute("""INSERT INTO paper_forward_tests
             (account_id,ticker,decision,atlas_score,confidence,market_price,
-             signal,reason,recorded_at,linked_order_id)
-            VALUES (?,?,?,?,?,?,?,?,?,?)""",
+             signal,reason,market_regime,volatility_regime,recorded_at,linked_order_id)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
             (int(account_id),ticker.upper().strip(),decision,atlas_score,
-             confidence,market_price,signal,reason,
+             confidence,market_price,signal,reason,market_regime,volatility_regime,
              datetime.now(timezone.utc).isoformat(),linked_order_id))
             return int(cur.lastrowid)
 
@@ -61,7 +70,8 @@ class ForwardTestRepository:
         with self.database.connect() as c:
             return pd.read_sql_query(
                 """SELECT id,ticker,decision,atlas_score,confidence,market_price,
-                signal,reason,recorded_at,linked_order_id
+                signal,reason,market_regime,volatility_regime,
+                recorded_at,linked_order_id
                 FROM paper_forward_tests WHERE account_id=?
                 ORDER BY recorded_at DESC,id DESC""",
                 c,params=(int(account_id),))
@@ -163,6 +173,8 @@ class ForwardTestOutcomeRepository:
                     f.market_price AS entry_price,
                     f.signal,
                     f.reason,
+                    f.market_regime,
+                    f.volatility_regime,
                     f.recorded_at,
                     o.horizon_days,
                     o.observed_price,

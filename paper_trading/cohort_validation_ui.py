@@ -9,6 +9,8 @@ from .cohort_validation import (
     decision_cohort_validation,
     strongest_cohort,
     score_monotonicity,
+    market_regime_validation,
+    volatility_regime_validation,
 )
 
 
@@ -90,6 +92,20 @@ def display_cohort_validation(*,db_path="data/paper_trading.db"):
 
     st.markdown("#### Decision Cohorts")
     _show_table(decision_table)
+
+    st.markdown("#### Market Regimes")
+    market_table=market_regime_validation(outcomes)
+    if market_table.empty:
+        st.info("New forward-test decisions will capture market regime here.")
+    else:
+        _show_table(market_table)
+
+    st.markdown("#### Volatility Regimes")
+    volatility_table=volatility_regime_validation(outcomes)
+    if volatility_table.empty:
+        st.info("New forward-test decisions will capture volatility regime here.")
+    else:
+        _show_table(volatility_table)
 
     st.warning(
         "Cohort results remain descriptive evidence, not proof of causation. "

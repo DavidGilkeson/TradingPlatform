@@ -114,3 +114,9 @@ def score_monotonicity(frame, horizon_days):
     if len(d)<5 or d["atlas_score"].nunique()<2:
         return None
     return float(d["atlas_score"].corr(d["return_pct"]))
+
+def market_regime_validation(frame, minimum_observations=5):
+    return cohort_table(frame,"market_regime",minimum_observations=minimum_observations)
+
+def volatility_regime_validation(frame, minimum_observations=5):
+    return cohort_table(frame,"volatility_regime",minimum_observations=minimum_observations)

@@ -1,24 +1,13 @@
-# Project Atlas — Sprint 32.5
+# Project Atlas — Sprint 32.6
 
-Cohort Validation is live.
+Market Regime Forward Validation is live.
 
-Atlas now decomposes prospective forward-test results by:
+New forward-test decisions preserve:
+- Bullish / Neutral / Bearish market regime
+- Quiet / Normal / Volatile volatility regime
 
-- Atlas Score band
-- confidence band
-- TAKEN / SKIPPED decision cohort
-- observation horizon
+Cohort Validation can now compare subsequent outcomes across those entry-time
+conditions. Existing databases migrate automatically, and older observations
+remain unclassified rather than being guessed.
 
-Each cohort reports sample size, average return, positive rate, average excess
-return versus SPY, benchmark beat rate, Decision Edge and Evidence Ready status.
-
-The dashboard also identifies the strongest evidence-qualified Atlas Score
-cohort and measures the correlation between Atlas Score and realised return at
-each forward horizon.
-
-This helps answer whether stronger Atlas scores are actually associated with
-better future outcomes rather than assuming the scoring model is meaningful.
-
-Next: Sprint 32.6 — capture market regime at the moment each forward-test
-decision is recorded and validate Atlas separately across bullish, bearish,
-volatile and quiet conditions.
+Next: Sprint 32.7 — automatic entry-time regime classification.
