@@ -1,32 +1,25 @@
-# Project Atlas — Sprint 33.2
+# Project Atlas — Sprint 33.3
 
-Plan vs Outcome Review is live.
+Plan Adherence Analytics is live.
 
-The Post-Trade Journal now retrieves the immutable structured entry plan and
-places it beside the completed result.
+Atlas now measures trading discipline from completed post-trade reviews:
 
-Planned:
-- entry
-- stop
-- target
-- reward/risk
-- original thesis
-- original invalidation
+- reviewed trade count
+- plan-follow rate
+- average execution-quality score
+- average return when the plan was followed
+- average return when the plan was broken
+- net P&L for followed-plan trades
+- net P&L for broken-plan trades
+- discipline return edge
+- performance grouped into Low, Solid and High execution-quality bands
+- win rate, average return and net P&L by execution band
 
-Actual:
-- exit
-- return %
-- realised P&L
-- outcome relative to the planned stop/target range
+The analytics deliberately separate process quality from outcome quality.
+A losing trade can still be disciplined, and a profitable trade can still be
+poorly executed.
 
-Atlas classifies completed outcomes as target reached/exceeded, stop
-reached/breached, profitable or losing exit inside the plan range, or
-break-even.
+These results remain descriptive. Atlas does not automatically change trading
+rules based on small samples.
 
-The comparison uses exact `paper_trade_entry_links` lineage instead of guessing
-which BUY created the completed trade. Multi-entry trades use the
-largest-weight linked plan as the primary display and are clearly identified.
-
-Legacy trades opened before Sprint 33.1 remain supported.
-
-Next: Sprint 33.3 — Plan Adherence Analytics.
+Next: Sprint 33.4 — Exit Discipline & Stop/Target Analytics.

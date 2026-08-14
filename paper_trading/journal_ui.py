@@ -9,6 +9,9 @@ from .journal_analytics import (
 from .journal_review import PaperTradeReviewRepository
 from .workflow import review_completeness
 from .plan_outcome import PlanOutcomeRepository
+from .adherence_analytics import (
+    build_adherence_frame, adherence_summary, execution_bands
+)
 
 def _ratio(v):
     if v is None: return "—"
@@ -66,6 +69,57 @@ def display_paper_journal_dashboard(db_path="data/paper_trading.db"):
         st.markdown("#### Atlas Score Band")
         f=performance_by_atlas_score(service)
         st.dataframe(f,width="stretch",hide_index=True) if not f.empty else st.info("No Atlas Score data yet.")
+
+    st.divider()
+    st.subheader("🎯 Plan Adherence Analytics")
+    adherence=build_adherence_frame(db_path,account.id)
+    discipline=adherence_summary(adherence)
+
+    discipline_cols=st.columns(4)
+    discipline_cols[0].metric(
+        "Reviewed Trades",discipline["reviewed_trades"])
+    discipline_cols[1].metric(
+        "Plan Follow Rate",
+        "—" if discipline["plan_follow_rate"] is None
+        else f'{discipline["plan_follow_rate"]:.1%}')
+    discipline_cols[2].metric(
+        "Avg Execution Quality",
+        "—" if discipline["average_execution_rating"] is None
+        else f'{discipline["average_execution_rating"]:.1f}/10')
+    return_edge=(
+        None
+        if discipline["followed_avg_return"] is None
+        or discipline["not_followed_avg_return"] is None
+        else discipline["followed_avg_return"]
+             - discipline["not_followed_avg_return"]
+    )
+    discipline_cols[3].metric(
+        "Discipline Return Edge",
+        "—" if return_edge is None else f"{return_edge:+.2f}%")
+
+    compare_cols=st.columns(2)
+    compare_cols[0].metric(
+        "Followed Plan — Avg Return",
+        "—" if discipline["followed_avg_return"] is None
+        else f'{discipline["followed_avg_return"]:+.2f}%',
+        f'Net P&L ${discipline["followed_net_pnl"]:+,.2f}')
+    compare_cols[1].metric(
+        "Broke Plan — Avg Return",
+        "—" if discipline["not_followed_avg_return"] is None
+        else f'{discipline["not_followed_avg_return"]:+.2f}%',
+        f'Net P&L ${discipline["not_followed_net_pnl"]:+,.2f}')
+
+    bands=execution_bands(adherence)
+    if bands.empty:
+        st.info(
+            "Complete post-trade reviews to build execution-discipline analytics.")
+    else:
+        st.markdown("##### Performance by Execution Quality")
+        st.dataframe(bands,width="stretch",hide_index=True)
+
+    st.caption(
+        "These statistics are descriptive. Small samples can be misleading; "
+        "Atlas does not change trading rules automatically from this data.")
 
     st.divider()
     st.subheader("🧠 Post-Trade Review")
