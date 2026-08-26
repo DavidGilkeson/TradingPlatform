@@ -1,0 +1,66 @@
+SPRINT 32.7.3 — APP.PY SCAN FEED PATCH
+=====================================
+
+Your current top-level app.py is not inside the Sprint ZIP, so make these two
+small changes in your existing TradingPlatform/app.py.
+
+CHANGE 1 — IMPORT
+-----------------
+
+Find your existing import:
+
+    from paper_trading_ui import display_paper_trading_dashboard
+
+Replace it with:
+
+    from paper_trading_ui import (
+        display_paper_trading_dashboard,
+        publish_scan_to_streamlit,
+    )
+
+
+CHANGE 2 — AFTER A SUCCESSFUL MARKET SCAN
+-----------------------------------------
+
+Find the point where your scan has completed and `df` contains the market
+results. It will be near the code that displays something like:
+
+    Fresh market scan complete — 502 stocks analysed.
+
+Immediately after the scan DataFrame is created / confirmed, add:
+
+    publish_scan_to_streamlit(df)
+
+
+CHANGE 3 — PAPER TRADING CALL (RECOMMENDED)
+-------------------------------------------
+
+Your older app.py currently calls Paper Trading approximately like:
+
+    display_paper_trading_dashboard(
+        db_path="data/paper_trading.db",
+    )
+
+Change it to:
+
+    display_paper_trading_dashboard(
+        db_path="data/paper_trading.db",
+        market_df=df if "df" in locals() else None,
+    )
+
+The Paper Trading dashboard now also recovers the scan from Streamlit session
+state automatically, so CHANGE 3 is a useful explicit connection but the
+session-state feed remains the durable source across reruns.
+
+
+EXPECTED RESULT
+---------------
+
+After scanning and opening Paper Trading, selecting NKE/NVDA/etc. should show:
+
+    Market Price     real scan price
+    Atlas Score      value from the current scanner
+    Atlas Verdict    scanner verdict/signal
+
+The blue "not present in current scan data passed to Paper Trading" message
+should disappear for stocks that are actually in the latest scan.

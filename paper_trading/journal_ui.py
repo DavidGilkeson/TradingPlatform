@@ -9,6 +9,9 @@ from .journal_analytics import (
 from .journal_review import PaperTradeReviewRepository
 from .workflow import review_completeness
 from .plan_outcome import PlanOutcomeRepository
+from .mistake_intelligence import (
+    build_mistake_frame, mistake_summary, recurring_lessons,
+)
 from .adherence_analytics import (
     build_adherence_frame, adherence_summary, execution_bands
 )
@@ -121,6 +124,29 @@ def display_paper_journal_dashboard(db_path="data/paper_trading.db"):
         "These statistics are descriptive. Small samples can be misleading; "
         "Atlas does not change trading rules automatically from this data.")
 
+    st.divider()
+    st.subheader("🧩 Mistake & Lesson Intelligence")
+    mistake_frame=build_mistake_frame(db_path,account.id)
+    mistake_table=mistake_summary(mistake_frame)
+    if mistake_table.empty:
+        st.info(
+            "Atlas has not detected recurring trading mistakes yet. "
+            "Keep completing the 'What went wrong?' field honestly.")
+    else:
+        worst=mistake_table.iloc[0]
+        mistake_cols=st.columns(3)
+        mistake_cols[0].metric("Most Costly Pattern",worst["Mistake"])
+        mistake_cols[1].metric("Occurrences",int(worst["Occurrences"]))
+        mistake_cols[2].metric("Associated Net P&L",f'${worst["Net P&L"]:+,.2f}')
+        st.dataframe(mistake_table,width="stretch",hide_index=True)
+        lessons=recurring_lessons(mistake_frame)
+        if lessons:
+            st.markdown("##### Lessons to carry into the next trade")
+            for lesson in lessons:
+                st.markdown(f"- {lesson}")
+    st.caption(
+        "Pattern detection uses your own journal text and completed paper-trade "
+        "results. It is descriptive evidence, not an automatic trading rule.")
     st.divider()
     st.subheader("🧠 Post-Trade Review")
     options={f"{r.ticker} | {r.exit_date} | ${r.realised_pnl:,.2f}":int(r.trade_id) for r in trades.itertuples(index=False)}

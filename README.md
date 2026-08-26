@@ -1,25 +1,19 @@
-# Project Atlas — Sprint 33.3
+# Project Atlas — Sprint 33.4
 
-Plan Adherence Analytics is live.
+Trading Mistake & Lesson Intelligence is live.
 
-Atlas now measures trading discipline from completed post-trade reviews:
+Atlas now converts post-trade journal text into structured behavioural evidence.
+Initial patterns include FOMO/chasing, early entries, stop/risk-rule breaches,
+poor reward/risk, oversized positions, early exits, holding too long, trading
+against plan and emotional decisions.
 
-- reviewed trade count
-- plan-follow rate
-- average execution-quality score
-- average return when the plan was followed
-- average return when the plan was broken
-- net P&L for followed-plan trades
-- net P&L for broken-plan trades
-- discipline return edge
-- performance grouped into Low, Solid and High execution-quality bands
-- win rate, average return and net P&L by execution band
+The Journal measures occurrences, associated net P&L, average return and loss
+rate, surfaces the most costly detected pattern, and carries unique lessons and
+next-time actions forward.
 
-The analytics deliberately separate process quality from outcome quality.
-A losing trade can still be disciplined, and a profitable trade can still be
-poorly executed.
+If a review says the plan was not followed but no known phrase is detected,
+Atlas records the generic "Traded against plan" pattern.
 
-These results remain descriptive. Atlas does not automatically change trading
-rules based on small samples.
+This remains descriptive and never automatically blocks or changes an order.
 
-Next: Sprint 33.4 — Exit Discipline & Stop/Target Analytics.
+Next: Sprint 33.5 — Pre-Trade Behaviour Guard.
