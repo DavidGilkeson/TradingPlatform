@@ -1,19 +1,26 @@
-# Project Atlas — Sprint 33.4
+# Project Atlas — Sprint 33.5
 
-Trading Mistake & Lesson Intelligence is live.
+Pre-Trade Behaviour Guard is live.
 
-Atlas now converts post-trade journal text into structured behavioural evidence.
-Initial patterns include FOMO/chasing, early entries, stop/risk-rule breaches,
-poor reward/risk, oversized positions, early exits, holding too long, trading
-against plan and emotional decisions.
+The Paper BUY ticket now brings lessons from the trader's own completed journal
+back into the next decision.
 
-The Journal measures occurrences, associated net P&L, average return and loss
-rate, surfaces the most costly detected pattern, and carries unique lessons and
-next-time actions forward.
+Before a new paper BUY Atlas can surface:
+- the most costly recurring behavioural pattern
+- how many times it has appeared
+- associated paper P&L
+- previous lessons learned
+- previous "what I will do differently next time" actions
 
-If a review says the plan was not followed but no known phrase is detected,
-Atlas records the generic "Traded against plan" pattern.
+A pattern must occur at least twice before Atlas calls it recurring. One-off
+mistakes remain visible as early evidence instead of producing an exaggerated
+warning.
 
-This remains descriptive and never automatically blocks or changes an order.
+Examples include FOMO/chasing entries, breaking stops, entering too early,
+oversizing, poor reward/risk, emotional decisions and abandoning the plan.
 
-Next: Sprint 33.5 — Pre-Trade Behaviour Guard.
+The Behaviour Guard is deliberately advisory. It does not automatically block,
+resize or execute a trade. Its job is to make the journal useful before the
+next decision is made.
+
+Next: Sprint 33.6 — Trading Checklist & Trade Readiness Score.

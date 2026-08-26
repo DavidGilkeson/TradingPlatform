@@ -31,6 +31,8 @@ from .intelligence_snapshot import IntelligenceSnapshotRepository
 from .forward_testing import ForwardTestOutcomeRepository
 from .decision_support import build_decision_support
 from .trade_plan import PaperTradePlanRepository, reward_risk
+from .mistake_intelligence import build_mistake_frame
+from .behaviour_guard import build_behaviour_guard, behaviour_guard_message
 
 
 def _latest_price(
@@ -339,6 +341,55 @@ def display_order_ticket(
         risk_decision = None
 
         if side == "BUY":
+            st.markdown("#### 🧠 Pre-Trade Behaviour Guard")
+            try:
+                personal_mistakes = build_mistake_frame(db_path, account.id)
+                behaviour_guard = build_behaviour_guard(personal_mistakes)
+            except Exception:
+                behaviour_guard = {
+                    "level": "insufficient",
+                    "headline": "No behavioural evidence yet",
+                    "primary_mistake": None,
+                    "mistakes": [],
+                    "lessons": [],
+                }
+
+            guard_message = behaviour_guard_message(behaviour_guard)
+            if behaviour_guard["level"] == "caution":
+                st.warning(guard_message)
+            elif behaviour_guard["level"] == "early":
+                st.info(guard_message)
+            elif behaviour_guard["level"] == "reminder":
+                st.info(guard_message)
+            else:
+                st.info(guard_message)
+
+            guard_primary = behaviour_guard.get("primary_mistake")
+            if guard_primary:
+                guard_cols = st.columns(3)
+                guard_cols[0].metric(
+                    "Recurring Pattern",
+                    str(guard_primary.get("Mistake", "—")),
+                )
+                guard_cols[1].metric(
+                    "Occurrences",
+                    int(guard_primary.get("Occurrences", 0)),
+                )
+                guard_cols[2].metric(
+                    "Associated Paper P&L",
+                    f'${float(guard_primary.get("Net P&L", 0.0)):+,.2f}',
+                )
+
+            if behaviour_guard.get("lessons"):
+                with st.expander("Previous lessons before this trade", expanded=True):
+                    for lesson in behaviour_guard["lessons"]:
+                        st.markdown(f"- {lesson}")
+
+            st.caption(
+                "This guard uses your own completed paper-trade journal. "
+                "It is a reminder only and does not automatically block or resize an order."
+            )
+
             st.markdown("#### 🛡️ Risk Controls")
 
             risk_col1, risk_col2, risk_col3 = st.columns(3)
