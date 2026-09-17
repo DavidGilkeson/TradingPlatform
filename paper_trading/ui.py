@@ -2,6 +2,9 @@ from __future__ import annotations
 import pandas as pd
 from .scan_feed import resolve_streamlit_scan
 from .workflow import workflow_progress
+from .lifecycle import lifecycle_state, lifecycle_text
+from .trade_plan import PaperTradePlanRepository
+from .orders import PaperOrderService
 from .journal_review import PaperTradeReviewRepository
 import streamlit as st
 from .sprint_status_ui import display_paper_trading_system_status
@@ -56,9 +59,34 @@ def display_paper_trading_dashboard(db_path="data/paper_trading.db", market_df: 
                 f'{progress["total"]} stages completed'
             ),
         )
-        st.caption(
-            "Scanner → Thesis → Risk Plan → Paper Position → "
-            "Completed Trade → Review"
+        # Sprint 33.7: one coherent lifecycle strip across the workstation.
+        order_service = PaperOrderService(db_path)
+        orders = order_service.list_orders(active_account.id)
+        plan_repo = PaperTradePlanRepository(db_path)
+        has_plan = any(
+            str(o.get("side", "")).upper() == "BUY"
+            and plan_repo.get_by_order(int(o["id"]))
+            for o in orders
+        )
+        has_review = bool(latest_review)
+        lifecycle = lifecycle_state(
+            has_scan=market_df is not None and not market_df.empty,
+            has_analysis=market_df is not None and not market_df.empty,
+            has_plan=has_plan,
+            readiness_status=("Ready" if has_plan else None),
+            has_open_position=bool(positions),
+            has_completed_trade=bool(trades),
+            has_review=has_review,
+            has_learning=has_review,
+        )
+        st.markdown("**Trade lifecycle**")
+        st.caption(lifecycle_text(lifecycle))
+        st.progress(
+            lifecycle["pct"],
+            text=(
+                f'{lifecycle["completed"]}/{lifecycle["total"]} lifecycle stages · '
+                f'Next: {lifecycle["next_stage"]}'
+            ),
         )
     except Exception:
         pass

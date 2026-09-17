@@ -30,3 +30,11 @@ presented as a probability of profit or a prediction of trade success.
 Next: Sprint 33.7 — Complete Trade Lifecycle UI. Join opportunity selection,
 pre-trade readiness, order execution, open-position monitoring, exit and review
 into a cleaner single workflow.
+
+## Sprint 33.7 — Complete Trade Lifecycle UI
+
+Sprint 33.7 connects the existing paper-trading systems into one visible workflow:
+
+**Find Opportunity → Analyse → Plan → Readiness → Paper Position → Completed Trade → Review → Atlas Learns**
+
+The Paper Trading dashboard now shows a lifecycle strip, completion progress, and the next incomplete stage. It derives state from the current scan, saved trade plans, positions, completed trades and journal reviews. This is navigation/process guidance only and does not place, block or resize trades.
