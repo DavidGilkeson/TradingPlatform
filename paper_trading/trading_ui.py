@@ -33,6 +33,7 @@ from .decision_support import build_decision_support
 from .trade_plan import PaperTradePlanRepository, reward_risk
 from .mistake_intelligence import build_mistake_frame
 from .behaviour_guard import build_behaviour_guard, behaviour_guard_message
+from .trade_readiness import assess_trade_readiness
 
 
 def _latest_price(
@@ -339,6 +340,7 @@ def display_order_ticket(
 
         risk_plan = None
         risk_decision = None
+        behaviour_guard = {"level": "insufficient", "lessons": []}
 
         if side == "BUY":
             st.markdown("#### 🧠 Pre-Trade Behaviour Guard")
@@ -708,6 +710,49 @@ def display_order_ticket(
             key="paper_order_confirmation",
         )
 
+        readiness = None
+        if side == "BUY":
+            readiness = assess_trade_readiness(
+                has_market_price=has_valid_market_price,
+                thesis=thesis,
+                invalidation=invalidation,
+                risk_allowed=risk_decision is not None and risk_decision.allowed,
+                guardrails_allowed=(
+                    guardrail_status is not None and guardrail_status.allowed
+                ),
+                planned_rr=planned_rr,
+                minimum_rr=minimum_rr,
+                atlas_score=atlas_score,
+                regime_evidence=support.get("overall"),
+                behaviour_level=behaviour_guard.get("level", "insufficient"),
+                confirmed=confirmed,
+            )
+            st.divider()
+            st.markdown("#### ✅ Trade Readiness Checklist")
+            ready_cols=st.columns(2)
+            ready_cols[0].metric("Readiness", readiness["status"])
+            ready_cols[1].metric("Checklist Score", f'{readiness["score"]}/100')
+            st.progress(readiness["score"] / 100.0)
+            for label, passed, hard in readiness["checks"]:
+                icon="✅" if passed else ("❌" if hard else "⚠️")
+                st.write(f"{icon} {label}")
+            if readiness["status"] == "Not Ready":
+                st.error(
+                    "Complete the required checklist items before placing this "
+                    "paper BUY: " + "; ".join(readiness["blockers"])
+                )
+            elif readiness["status"] == "Caution":
+                st.warning(
+                    "The required execution checks pass, but Atlas has caution "
+                    "items worth reviewing before this simulated trade."
+                )
+            else:
+                st.success("Required paper-trade readiness checks are complete.")
+            st.caption(
+                "Readiness measures process completeness, not the probability "
+                "that a trade will be profitable."
+            )
+
         if intent:
             st.info(
                 f"Queued from Atlas: **{intent.get('ticker')}** · "
@@ -733,6 +778,8 @@ def display_order_ticket(
                 or risk_blocked
                 or (not has_valid_market_price)
                 or (side == "BUY" and not thesis.strip())
+                or (side == "BUY" and readiness is not None
+                    and readiness["status"] == "Not Ready")
             ),
             key="place_paper_order",
         ):

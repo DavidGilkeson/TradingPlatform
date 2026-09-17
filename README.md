@@ -1,26 +1,32 @@
-# Project Atlas — Sprint 33.5
+# Project Atlas — Sprint 33.6
 
-Pre-Trade Behaviour Guard is live.
+Trading Checklist & Trade Readiness is live.
 
-The Paper BUY ticket now brings lessons from the trader's own completed journal
-back into the next decision.
+Before a Paper BUY, Atlas now consolidates the major pre-trade checks into one
+transparent readiness panel:
 
-Before a new paper BUY Atlas can surface:
-- the most costly recurring behavioural pattern
-- how many times it has appeared
-- associated paper P&L
-- previous lessons learned
-- previous "what I will do differently next time" actions
+- valid market price
+- written thesis
+- written invalidation condition
+- risk-control result
+- portfolio guardrail result
+- planned reward/risk versus the configured minimum
+- Atlas Score availability
+- forward-tested regime evidence
+- personal behaviour-guard evidence
+- simulated-order confirmation
 
-A pattern must occur at least twice before Atlas calls it recurring. One-off
-mistakes remain visible as early evidence instead of producing an exaggerated
-warning.
+Atlas reports **Ready**, **Caution**, or **Not Ready**, plus a 0–100 checklist
+completion score and the individual pass/caution/fail items.
 
-Examples include FOMO/chasing entries, breaking stops, entering too early,
-oversizing, poor reward/risk, emotional decisions and abandoning the plan.
+Hard execution/process requirements (market price, thesis, risk checks,
+portfolio guardrails, minimum reward/risk and confirmation) can produce Not
+Ready and keep the Paper BUY disabled. Behavioural, regime and missing-score
+items remain cautionary rather than becoming automatic strategy rules.
 
-The Behaviour Guard is deliberately advisory. It does not automatically block,
-resize or execute a trade. Its job is to make the journal useful before the
-next decision is made.
+The readiness score measures process completeness only. It is deliberately not
+presented as a probability of profit or a prediction of trade success.
 
-Next: Sprint 33.6 — Trading Checklist & Trade Readiness Score.
+Next: Sprint 33.7 — Complete Trade Lifecycle UI. Join opportunity selection,
+pre-trade readiness, order execution, open-position monitoring, exit and review
+into a cleaner single workflow.
