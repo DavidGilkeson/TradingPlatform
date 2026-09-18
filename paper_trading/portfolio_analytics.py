@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from typing import Any
 import pandas as pd
 from .account import PaperAccountService
+from .exit_plans import ExitPlanRepository
+from .position_experience import build_position_experience
 
 @dataclass(slots=True)
 class PortfolioAnalytics:
@@ -79,6 +81,13 @@ def get_position_details(service: PaperAccountService, ticker: str) -> dict[str,
             "SELECT * FROM paper_journal WHERE account_id=? AND ticker=? ORDER BY created_at DESC,id DESC LIMIT 1",
             (account.id, ticker),
         ).fetchone()
+    plan = ExitPlanRepository(str(service.database.db_path)).get_plan(account_id=account.id, ticker=ticker)
+    experience = build_position_experience(
+        entry_price=position.average_entry_price,
+        current_price=position.current_price,
+        stop_price=plan.stop_price if plan else None,
+        target_price=plan.target_price if plan else None,
+    )
     return {
         "ticker": position.ticker,
         "shares": position.shares,
@@ -89,6 +98,14 @@ def get_position_details(service: PaperAccountService, ticker: str) -> dict[str,
         "unrealised_pnl": position.unrealised_pnl,
         "unrealised_return_pct": position.unrealised_return_pct,
         "opened_at": position.opened_at,
+        "allocation_pct": (position.market_value / service.snapshot(persist=False).positions_value) if service.snapshot(persist=False).positions_value > 0 else 0.0,
+        "status": experience.status,
+        "status_detail": experience.status_detail,
+        "stop_price": experience.stop_price,
+        "target_price": experience.target_price,
+        "distance_to_stop_pct": experience.distance_to_stop_pct,
+        "distance_to_target_pct": experience.distance_to_target_pct,
+        "reward_risk_ratio": experience.reward_risk_ratio,
         "latest_order": dict(order) if order else None,
         "latest_journal": dict(journal) if journal else None,
     }

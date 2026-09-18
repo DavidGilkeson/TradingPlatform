@@ -20,3 +20,6 @@ __all__ = [
 from .portfolio_analytics import PortfolioAnalytics, build_positions_frame, calculate_portfolio_analytics, get_position_details
 
 __all__ += ["PortfolioAnalytics","build_positions_frame","calculate_portfolio_analytics","get_position_details"]
+
+from .position_experience import PositionExperience, build_position_experience
+__all__ += ["PositionExperience", "build_position_experience"]

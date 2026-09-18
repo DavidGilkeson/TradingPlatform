@@ -10,78 +10,74 @@ def display_live_portfolio_dashboard(*, db_path="data/paper_trading.db"):
     analytics = calculate_portfolio_analytics(service)
     frame = build_positions_frame(service)
 
-    st.subheader("📊 Live Portfolio Dashboard")
+    st.subheader("📊 Portfolio & Positions")
+    st.caption("Manage open paper positions with the information that matters most: allocation, live P&L and exit-plan context.")
     row1 = st.columns(5)
-    values1 = [
-        ("Account Equity", f"${analytics.equity:,.2f}"),
-        ("Cash", f"${analytics.cash:,.2f}"),
-        ("Invested", f"${analytics.invested_value:,.2f}"),
-        ("Total Return", f"{analytics.total_return_pct:.2%}"),
-        ("Open Positions", analytics.open_positions),
-    ]
-    for col, (label, value) in zip(row1, values1):
-        col.metric(label, value)
-
-    row2 = st.columns(5)
-    values2 = [
-        ("Unrealised P&L", f"${analytics.unrealised_pnl:,.2f}"),
-        ("Realised P&L", f"${analytics.realised_pnl:,.2f}"),
-        ("Winning Positions", analytics.winning_positions),
-        ("Losing Positions", analytics.losing_positions),
-        ("Diversification", f"{analytics.diversification_score:.0f}/100"),
-    ]
-    for col, (label, value) in zip(row2, values2):
-        col.metric(label, value)
+    for col, (label, value) in zip(row1, [
+        ("Account Equity", f"${analytics.equity:,.2f}"), ("Cash", f"${analytics.cash:,.2f}"),
+        ("Invested", f"${analytics.invested_value:,.2f}"), ("Unrealised P&L", f"${analytics.unrealised_pnl:,.2f}"),
+        ("Open Positions", analytics.open_positions)]): col.metric(label, value)
 
     if frame.empty:
-        st.info("No open positions yet. Place a paper BUY order first.")
+        st.info("No open positions yet. Your first paper BUY will appear here with live P&L and exit-plan context.")
         return
 
-    st.subheader("📈 Open Positions")
-    st.dataframe(frame, width="stretch", hide_index=True)
+    st.markdown("### Open Positions")
+    display = frame.copy()
+    display["Shares"] = display["Shares"].map(lambda x: f"{x:,.4f}")
+    for c in ["Average Entry","Current Price","Cost Basis","Market Value","Unrealised P&L"]:
+        display[c] = display[c].map(lambda x: f"${x:,.2f}")
+    display["Return"] = display["Return"].map(lambda x: f"{x:.2%}")
+    display["Allocation"] = display["Allocation"].map(lambda x: f"{x:.1%}")
+    st.dataframe(display, width="stretch", hide_index=True)
 
-    left, right = st.columns(2)
-    with left:
-        if analytics.largest_winner_ticker:
-            st.success(f"**Largest Winner:** {analytics.largest_winner_ticker} {analytics.largest_winner_return:.2%}")
-        else:
-            st.info("No winning positions currently.")
-    with right:
-        if analytics.largest_loser_ticker:
-            st.warning(f"**Largest Loser:** {analytics.largest_loser_ticker} {analytics.largest_loser_return:.2%}")
-        else:
-            st.info("No losing positions currently.")
+    winner, loser = st.columns(2)
+    with winner:
+        st.success(f"Largest winner: **{analytics.largest_winner_ticker} {analytics.largest_winner_return:.2%}**" if analytics.largest_winner_ticker else "No winning positions currently.")
+    with loser:
+        st.warning(f"Largest loser: **{analytics.largest_loser_ticker} {analytics.largest_loser_return:.2%}**" if analytics.largest_loser_ticker else "No losing positions currently.")
 
-    chart1, chart2 = st.columns(2)
-    with chart1:
-        fig = px.pie(frame, names="Ticker", values="Market Value", hole=0.45, title="Position Allocation")
-        st.plotly_chart(fig, width="stretch")
-    with chart2:
-        cash_df = pd.DataFrame({"Category":["Cash","Invested"],"Value":[analytics.cash,analytics.invested_value]})
-        fig = px.pie(cash_df, names="Category", values="Value", hole=0.45, title="Cash vs Invested")
-        st.plotly_chart(fig, width="stretch")
-
-    st.subheader("🔎 Position Details")
-    ticker = st.selectbox("Select a position", frame["Ticker"].tolist(), key="paper_position_details_ticker")
+    st.markdown("### Position Manager")
+    ticker = st.selectbox("Position", frame["Ticker"].tolist(), key="paper_position_details_ticker")
     details = get_position_details(service, ticker)
-    if details:
-        metrics = st.columns(4)
-        metrics[0].metric("Shares", f"{details['shares']:,.4f}")
-        metrics[1].metric("Average Entry", f"${details['average_entry_price']:,.2f}")
-        metrics[2].metric("Current Price", f"${details['current_price']:,.2f}")
-        metrics[3].metric("Unrealised Return", f"{details['unrealised_return_pct']:.2%}")
-        order, journal = details["latest_order"], details["latest_journal"]
-        c1, c2 = st.columns(2)
-        with c1:
-            st.markdown("#### Latest Trade Context")
-            if order:
-                st.write(f"**Side:** {order.get('side','—')}")
-                st.write(f"**Filled price:** ${float(order.get('filled_price') or 0):,.2f}")
-                st.write(f"**Date:** {order.get('filled_at') or order.get('created_at')}")
-        with c2:
-            st.markdown("#### Journal Evidence")
-            if journal:
-                st.write(f"**Reason:** {journal.get('reason') or '—'}")
-                st.write(f"**Confidence:** {journal.get('confidence') or '—'}")
-                st.write(f"**Atlas Score:** {journal.get('atlas_score') or '—'}")
-                st.write(f"**Notes:** {journal.get('notes') or '—'}")
+    if not details: return
+    st.markdown(f"#### {ticker} — {details['status']}")
+    st.caption(details["status_detail"])
+    a,b,c,d,e = st.columns(5)
+    a.metric("Shares", f"{details['shares']:,.4f}")
+    b.metric("Avg Entry", f"${details['average_entry_price']:,.2f}")
+    c.metric("Current", f"${details['current_price']:,.2f}", f"{details['unrealised_return_pct']:.2%}")
+    d.metric("Unrealised P&L", f"${details['unrealised_pnl']:,.2f}")
+    e.metric("Allocation", f"{details['allocation_pct']:.1%}")
+
+    plan, context = st.columns(2)
+    with plan:
+        st.markdown("#### Exit Plan")
+        stop = details.get("stop_price"); target = details.get("target_price")
+        if stop is None and target is None:
+            st.info("No stop/target plan saved for this position yet.")
+        else:
+            x,y,z = st.columns(3)
+            x.metric("Stop", f"${stop:,.2f}" if stop is not None else "—")
+            y.metric("Target", f"${target:,.2f}" if target is not None else "—")
+            z.metric("Planned R:R", f"{details['reward_risk_ratio']:.2f}:1" if details.get('reward_risk_ratio') is not None else "—")
+            if details.get("distance_to_stop_pct") is not None: st.caption(f"Distance above stop: {details['distance_to_stop_pct']:.2%}")
+            if details.get("distance_to_target_pct") is not None: st.caption(f"Distance to target: {details['distance_to_target_pct']:.2%}")
+    with context:
+        st.markdown("#### Original Trade Context")
+        journal = details.get("latest_journal") or {}
+        st.write(f"**Reason:** {journal.get('reason') or '—'}")
+        st.write(f"**Confidence:** {journal.get('confidence') or '—'}")
+        st.write(f"**Atlas Score:** {journal.get('atlas_score') or '—'}")
+        st.write(f"**Notes:** {journal.get('notes') or '—'}")
+
+    st.caption("Use the Trade tab to add/reduce/close a position and the exit-plan tools to update stop or target levels.")
+
+    charts = st.expander("Portfolio allocation charts", expanded=False)
+    with charts:
+        left,right=st.columns(2)
+        with left:
+            st.plotly_chart(px.pie(frame,names="Ticker",values="Market Value",hole=.45,title="Position Allocation"),width="stretch")
+        with right:
+            cash_df=pd.DataFrame({"Category":["Cash","Invested"],"Value":[analytics.cash,analytics.invested_value]})
+            st.plotly_chart(px.pie(cash_df,names="Category",values="Value",hole=.45,title="Cash vs Invested"),width="stretch")
