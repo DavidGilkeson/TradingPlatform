@@ -3,6 +3,7 @@ import pandas as pd
 from .scan_feed import resolve_streamlit_scan
 from .workflow import workflow_progress
 from .lifecycle import lifecycle_state, lifecycle_text
+from .dashboard_summary import build_command_centre_summary, next_action_text
 from .trade_plan import PaperTradePlanRepository
 from .orders import PaperOrderService
 from .journal_review import PaperTradeReviewRepository
@@ -32,43 +33,26 @@ def display_paper_trading_dashboard(db_path="data/paper_trading.db", market_df: 
     market_df = resolve_streamlit_scan(market_df)
     st.header("💼 Atlas Paper Trading")
 
-    # Sprint 33: lightweight end-to-end workflow status.
+    # Sprint 34.0: the top of Paper Trading is now a command centre rather
+    # than a stack of implementation modules. Detailed tools remain in tabs.
+    lifecycle = None
     try:
-        account_service=PaperAccountService(db_path)
-        active_account=account_service.active_account()
-        positions=account_service.repository.list_positions(active_account.id)
-        trades=account_service.repository.list_trades(active_account.id)
-        review_repo=PaperTradeReviewRepository(db_path)
-        latest_review=(
-            review_repo.get_review(int(trades[0].id))
-            if trades
-            else None
-        )
-        progress=workflow_progress(
-            has_scan=market_df is not None and not market_df.empty,
-            has_thesis=False,
-            has_risk_plan=False,
-            has_open_position=bool(positions),
-            has_completed_trade=bool(trades),
-            has_review=bool(latest_review),
-        )
-        st.progress(
-            progress["pct"],
-            text=(
-                f'Paper-trading workflow: {progress["completed"]}/'
-                f'{progress["total"]} stages completed'
-            ),
-        )
-        # Sprint 33.7: one coherent lifecycle strip across the workstation.
+        account_service = PaperAccountService(db_path)
+        active_account = account_service.initialise_account()
+        positions = account_service.repository.list_positions(active_account.id)
         order_service = PaperOrderService(db_path)
+        trades = order_service.list_trades(active_account.id)
         orders = order_service.list_orders(active_account.id)
+        snapshot = account_service.snapshot(persist=False)
+
+        review_repo = PaperTradeReviewRepository(db_path)
+        latest_review = (review_repo.get_review(int(trades[0]["id"])) if trades else None)
         plan_repo = PaperTradePlanRepository(db_path)
         has_plan = any(
             str(o.get("side", "")).upper() == "BUY"
             and plan_repo.get_by_order(int(o["id"]))
             for o in orders
         )
-        has_review = bool(latest_review)
         lifecycle = lifecycle_state(
             has_scan=market_df is not None and not market_df.empty,
             has_analysis=market_df is not None and not market_df.empty,
@@ -76,20 +60,49 @@ def display_paper_trading_dashboard(db_path="data/paper_trading.db", market_df: 
             readiness_status=("Ready" if has_plan else None),
             has_open_position=bool(positions),
             has_completed_trade=bool(trades),
-            has_review=has_review,
-            has_learning=has_review,
+            has_review=bool(latest_review),
+            has_learning=bool(latest_review),
         )
-        st.markdown("**Trade lifecycle**")
-        st.caption(lifecycle_text(lifecycle))
-        st.progress(
-            lifecycle["pct"],
-            text=(
-                f'{lifecycle["completed"]}/{lifecycle["total"]} lifecycle stages · '
-                f'Next: {lifecycle["next_stage"]}'
-            ),
+        summary = build_command_centre_summary(
+            snapshot=snapshot, positions=positions, trades=trades
         )
-    except Exception:
-        pass
+
+        st.markdown("### Command Centre")
+        top = st.columns(6)
+        top[0].metric("Equity", f'${summary["equity"]:,.2f}')
+        top[1].metric("Cash", f'${summary["cash"]:,.2f}')
+        top[2].metric("Invested", f'${summary["invested"]:,.2f}')
+        top[3].metric("Total P&L", f'${summary["total_pnl"]:,.2f}')
+        top[4].metric("Return", f'{summary["total_return_pct"]:.2%}')
+        top[5].metric("Open Positions", summary["open_positions"])
+
+        activity, journey = st.columns([1, 2])
+        with activity:
+            st.markdown("#### Today's activity")
+            a1, a2 = st.columns(2)
+            a1.metric("Closed Trades", summary["today_completed_trades"])
+            a2.metric("Realised P&L", f'${summary["today_realised_pnl"]:,.2f}')
+            st.caption(
+                f'{summary["cash_pct"]:.0%} cash · '
+                f'{summary["invested_pct"]:.0%} invested · '
+                f'{summary["completed_trades"]} completed trades total'
+            )
+        with journey:
+            st.markdown("#### Trade lifecycle")
+            st.caption(lifecycle_text(lifecycle))
+            st.progress(
+                lifecycle["pct"],
+                text=(
+                    f'{lifecycle["completed"]}/{lifecycle["total"]} stages · '
+                    f'Next: {lifecycle["next_stage"]}'
+                ),
+            )
+            st.info(f'**Next action:** {next_action_text(lifecycle)}')
+    except Exception as exc:
+        # The trading workstation should remain usable even when optional
+        # summary evidence is unavailable or a legacy database is migrating.
+        st.caption("Command Centre summary is temporarily unavailable; trading tools remain active.")
+
     service = PaperAccountService(db_path)
     account = service.initialise_account()
 

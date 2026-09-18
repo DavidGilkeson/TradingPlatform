@@ -38,3 +38,9 @@ Sprint 33.7 connects the existing paper-trading systems into one visible workflo
 **Find Opportunity → Analyse → Plan → Readiness → Paper Position → Completed Trade → Review → Atlas Learns**
 
 The Paper Trading dashboard now shows a lifecycle strip, completion progress, and the next incomplete stage. It derives state from the current scan, saved trade plans, positions, completed trades and journal reviews. This is navigation/process guidance only and does not place, block or resize trades.
+
+## Sprint 34.0 — Paper Trading Dashboard Redesign
+
+Adds a command-centre summary with account/equity, P&L, open positions, today's
+activity, lifecycle progress, and a plain-English next action. Detailed tools stay
+in the existing tabs; trading/risk behaviour is unchanged.
