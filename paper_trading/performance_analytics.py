@@ -106,3 +106,80 @@ def monthly_performance(service):
         s=float(g["equity"].iloc[0]); e=float(g["equity"].iloc[-1])
         rows.append({"Month":month,"Starting Equity":s,"Ending Equity":e,"P&L":e-s,"Return":e/s-1 if s else 0})
     return pd.DataFrame(rows)
+
+def trade_performance_breakdown(service, by="ticker"):
+    """Aggregate completed paper trades into an interpretable performance table."""
+    trades = build_trade_journal_frame(service)
+    if trades.empty or by not in trades.columns:
+        return pd.DataFrame()
+    d = trades.copy()
+    d["realised_pnl"] = pd.to_numeric(d["realised_pnl"], errors="coerce").fillna(0.0)
+    d["return_pct"] = pd.to_numeric(d["return_pct"], errors="coerce").fillna(0.0)
+    rows = []
+    for value, g in d.groupby(by, dropna=False):
+        pnl = g["realised_pnl"]
+        rows.append({
+            by: "Unknown" if pd.isna(value) else value,
+            "Trades": int(len(g)),
+            "Wins": int((pnl > 0).sum()),
+            "Losses": int((pnl < 0).sum()),
+            "Win Rate": float((pnl > 0).mean()),
+            "Net P&L": float(pnl.sum()),
+            "Avg Return": float(g["return_pct"].mean()),
+            "Best Return": float(g["return_pct"].max()),
+            "Worst Return": float(g["return_pct"].min()),
+        })
+    return pd.DataFrame(rows).sort_values(["Net P&L", "Trades"], ascending=[False, False]).reset_index(drop=True)
+
+
+def performance_trend(service, recent_trades=10):
+    """Compare recent completed trades with the immediately preceding sample."""
+    if recent_trades < 2:
+        raise ValueError("Recent trade window must be at least two.")
+    trades = build_trade_journal_frame(service)
+    if trades.empty:
+        return {"status":"Insufficient evidence", "recent_count":0, "prior_count":0,
+                "recent_avg_return":None, "prior_avg_return":None, "return_delta":None,
+                "recent_win_rate":None, "prior_win_rate":None}
+    d = trades.sort_values("exit_date").copy()
+    d["return_pct"] = pd.to_numeric(d["return_pct"], errors="coerce").fillna(0.0)
+    d["realised_pnl"] = pd.to_numeric(d["realised_pnl"], errors="coerce").fillna(0.0)
+    recent = d.tail(recent_trades)
+    prior = d.iloc[max(0, len(d)-2*recent_trades):max(0, len(d)-recent_trades)]
+    if len(recent) < 2 or len(prior) < 2:
+        return {"status":"Insufficient evidence", "recent_count":len(recent), "prior_count":len(prior),
+                "recent_avg_return":float(recent["return_pct"].mean()) if len(recent) else None,
+                "prior_avg_return":float(prior["return_pct"].mean()) if len(prior) else None,
+                "return_delta":None, "recent_win_rate":float((recent["realised_pnl"]>0).mean()) if len(recent) else None,
+                "prior_win_rate":float((prior["realised_pnl"]>0).mean()) if len(prior) else None}
+    rr=float(recent["return_pct"].mean()); pr=float(prior["return_pct"].mean())
+    rw=float((recent["realised_pnl"]>0).mean()); pw=float((prior["realised_pnl"]>0).mean())
+    delta=rr-pr
+    status="Improving" if delta > 0.0025 else "Declining" if delta < -0.0025 else "Stable"
+    return {"status":status, "recent_count":len(recent), "prior_count":len(prior),
+            "recent_avg_return":rr, "prior_avg_return":pr, "return_delta":delta,
+            "recent_win_rate":rw, "prior_win_rate":pw}
+
+
+def risk_adjusted_metrics(service):
+    """Paper-account risk metrics from recorded daily equity snapshots."""
+    d = daily_performance(service)
+    if d.empty or len(d) < 2:
+        return {"annualised_return":None, "annualised_volatility":None, "sharpe":None,
+                "sortino":None, "calmar":None, "positive_day_rate":None}
+    r = pd.to_numeric(d["daily_return"], errors="coerce").dropna()
+    if len(r) < 2:
+        return {"annualised_return":None, "annualised_volatility":None, "sharpe":None,
+                "sortino":None, "calmar":None, "positive_day_rate":None}
+    mean=float(r.mean()); std=float(r.std())
+    downside=r[r<0]; downside_std=float(downside.std()) if len(downside)>1 else 0.0
+    ann_return=mean*252
+    ann_vol=std*math.sqrt(252)
+    sharpe=ann_return/ann_vol if ann_vol>0 else None
+    sortino=ann_return/(downside_std*math.sqrt(252)) if downside_std>0 else None
+    hist=build_equity_history(service)
+    mdd=abs(float(hist["drawdown_pct"].min())) if not hist.empty else 0.0
+    calmar=ann_return/mdd if mdd>0 else None
+    return {"annualised_return":ann_return, "annualised_volatility":ann_vol,
+            "sharpe":sharpe, "sortino":sortino, "calmar":calmar,
+            "positive_day_rate":float((r>0).mean())}
