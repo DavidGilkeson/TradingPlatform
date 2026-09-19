@@ -17,3 +17,11 @@ Regression: **239 tests passed**, with 1 pre-existing pandas FutureWarning.
 - Excess return, max drawdown, volatility and Sharpe comparison
 - Minimum-sample evidence labelling and safe benchmark-data fallback
 - 243 regression tests passing
+
+## Sprint 35.1 — Error Handling & Recovery
+- Added dependency-light operational resilience helpers (`paper_trading/resilience.py`).
+- Added safe handling for connection/timeouts, SQLite errors, and missing/unavailable files.
+- Added read-only database preflight that does not create a missing DB by accident.
+- Added reusable Streamlit recovery messaging (`paper_trading/recovery_ui.py`).
+- Documented the observed Save Favourites / DownloadButton disconnect case and safe recovery path.
+- Recovery is deliberately non-destructive: no paper-trading data is deleted or silently repaired.

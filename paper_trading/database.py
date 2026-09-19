@@ -123,11 +123,24 @@ class PaperTradingDatabase:
         connection = sqlite3.connect(self.db_path)
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA foreign_keys = ON")
+        connection.execute("PRAGMA journal_mode = WAL")
+        connection.execute("PRAGMA synchronous = NORMAL")
+        connection.execute("PRAGMA busy_timeout = 5000")
         return connection
 
     def initialise(self) -> None:
         with self.connect() as connection:
             connection.executescript(SCHEMA)
+            # Track schema versions from Sprint 35 onward without breaking older DBs.
+            connection.execute("PRAGMA user_version = 35")
+
+    def health_check(self):
+        from .database_health import database_health
+        return database_health(self.db_path)
+
+    def backup(self, backup_dir=None):
+        from .database_health import create_database_backup
+        return create_database_backup(self.db_path, backup_dir)
 
     def reset_all(self) -> None:
         with self.connect() as connection:
