@@ -15,6 +15,7 @@ from .mistake_intelligence import (
 from .adherence_analytics import (
     build_adherence_frame, adherence_summary, execution_bands
 )
+from .strategy_score_analytics_ui import display_strategy_score_analytics
 
 def _ratio(v):
     if v is None: return "—"
@@ -72,6 +73,9 @@ def display_paper_journal_dashboard(db_path="data/paper_trading.db"):
         st.markdown("#### Atlas Score Band")
         f=performance_by_atlas_score(service)
         st.dataframe(f,width="stretch",hide_index=True) if not f.empty else st.info("No Atlas Score data yet.")
+
+    st.divider()
+    display_strategy_score_analytics(db_path=db_path)
 
     st.divider()
     st.subheader("🎯 Plan Adherence Analytics")
