@@ -5,7 +5,7 @@ from .account import PaperAccountService
 from .performance_analytics import (
     build_equity_history, calculate_performance_summary, daily_performance,
     monthly_performance, rolling_performance, trade_performance_breakdown,
-    performance_trend, risk_adjusted_metrics,
+    performance_trend, risk_adjusted_metrics, benchmark_comparison_from_history, fetch_benchmark_history,
 )
 
 def _ratio(v):
@@ -59,6 +59,33 @@ def display_performance_dashboard(db_path="data/paper_trading.db"):
     for col,(label,val,kind) in zip(cols,vals):
         col.metric(label,"—" if val is None else (f"{val:.2%}" if kind=="pct" else f"{val:.2f}"))
     st.caption("Risk-adjusted statistics use recorded paper-account snapshots. Short histories can make annualised figures unstable, so treat early readings as descriptive evidence only.")
+
+    st.markdown("#### Atlas paper account vs SPY")
+    st.caption("A date-aligned comparison over the same recorded period. SPY is a benchmark reference, not a claim that either approach will outperform in future.")
+    start_date=h["captured_at"].min().date()
+    end_date=(h["captured_at"].max()+__import__("pandas").Timedelta(days=1)).date()
+    spy=fetch_benchmark_history(start_date,end_date,"SPY")
+    bench=benchmark_comparison_from_history(service,spy,"SPY",minimum_days=5)
+    if bench["observations"] < 2:
+        st.info("SPY comparison is unavailable until Atlas has overlapping paper-account and benchmark history.")
+    else:
+        bc=st.columns(5)
+        bc[0].metric("Atlas Return",f'{bench["account_return"]:.2%}')
+        bc[1].metric("SPY Return",f'{bench["benchmark_return"]:.2%}')
+        bc[2].metric("Excess Return",f'{bench["excess_return"]:+.2%}')
+        bc[3].metric("Atlas Max Drawdown",f'{bench["account_max_drawdown"]:.2%}')
+        bc[4].metric("SPY Max Drawdown",f'{bench["benchmark_max_drawdown"]:.2%}')
+        comp=bench["frame"][["date","account_return","benchmark_return"]].rename(columns={"account_return":"Atlas","benchmark_return":"SPY"}).melt("date",var_name="Series",value_name="Cumulative Return")
+        fig=px.line(comp,x="date",y="Cumulative Return",color="Series",title="Atlas vs SPY — Same Period")
+        fig.update_yaxes(tickformat=".1%")
+        st.plotly_chart(fig,width="stretch")
+        rc=st.columns(4)
+        rc[0].metric("Atlas Volatility","—" if bench["account_volatility"] is None else f'{bench["account_volatility"]:.2%}')
+        rc[1].metric("SPY Volatility","—" if bench["benchmark_volatility"] is None else f'{bench["benchmark_volatility"]:.2%}')
+        rc[2].metric("Atlas Sharpe","—" if bench["account_sharpe"] is None else f'{bench["account_sharpe"]:.2f}')
+        rc[3].metric("SPY Sharpe","—" if bench["benchmark_sharpe"] is None else f'{bench["benchmark_sharpe"]:.2f}')
+        if bench["status"]=="Insufficient evidence":
+            st.info(f'Only {bench["observations"]} overlapping observations are available. Treat the comparison as early descriptive evidence, not a conclusion.')
 
     st.markdown("#### What is making or losing money?")
     by_ticker=trade_performance_breakdown(service,"ticker")

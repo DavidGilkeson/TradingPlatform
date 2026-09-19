@@ -11,3 +11,9 @@ Highlights:
 - descriptive score/outcome relationship check
 
 Regression: **239 tests passed**, with 1 pre-existing pandas FutureWarning.
+
+## Sprint 34.4 — Benchmark & SPY Comparison Polish
+- Same-period Atlas vs SPY cumulative return comparison
+- Excess return, max drawdown, volatility and Sharpe comparison
+- Minimum-sample evidence labelling and safe benchmark-data fallback
+- 243 regression tests passing

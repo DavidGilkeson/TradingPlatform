@@ -183,3 +183,70 @@ def risk_adjusted_metrics(service):
     return {"annualised_return":ann_return, "annualised_volatility":ann_vol,
             "sharpe":sharpe, "sortino":sortino, "calmar":calmar,
             "positive_day_rate":float((r>0).mean())}
+
+def benchmark_comparison_from_history(service, benchmark_history, benchmark_ticker="SPY", minimum_days=5):
+    """Align paper-account equity with a benchmark price series on comparable dates.
+
+    benchmark_history must contain a date/datetime column (Date/date/captured_at) and a
+    price column (Close/close/price). Returns aligned cumulative returns and descriptive
+    comparison metrics. No claim of statistical significance is made.
+    """
+    account = build_equity_history(service)
+    empty = {"status":"Insufficient evidence","benchmark":benchmark_ticker,"observations":0,
+             "account_return":None,"benchmark_return":None,"excess_return":None,
+             "account_max_drawdown":None,"benchmark_max_drawdown":None,
+             "account_volatility":None,"benchmark_volatility":None,"account_sharpe":None,
+             "benchmark_sharpe":None,"frame":pd.DataFrame()}
+    if account.empty or benchmark_history is None or len(benchmark_history) == 0:
+        return empty
+    b = pd.DataFrame(benchmark_history).copy()
+    date_col = next((c for c in ["Date","date","captured_at"] if c in b.columns), None)
+    price_col = next((c for c in ["Close","close","price"] if c in b.columns), None)
+    if date_col is None or price_col is None:
+        return empty
+    a = account[["captured_at","equity"]].copy()
+    a["date"] = pd.to_datetime(a["captured_at"], errors="coerce", utc=True).dt.date
+    a = a.dropna(subset=["date","equity"]).groupby("date",as_index=False).tail(1)
+    b["date"] = pd.to_datetime(b[date_col], errors="coerce", utc=True).dt.date
+    b["benchmark_price"] = pd.to_numeric(b[price_col], errors="coerce")
+    b = b.dropna(subset=["date","benchmark_price"]).sort_values("date").drop_duplicates("date",keep="last")
+    aligned = a[["date","equity"]].merge(b[["date","benchmark_price"]], on="date", how="inner").sort_values("date").reset_index(drop=True)
+    if len(aligned) < 2:
+        return empty
+    aligned["account_return"] = aligned["equity"] / float(aligned["equity"].iloc[0]) - 1
+    aligned["benchmark_return"] = aligned["benchmark_price"] / float(aligned["benchmark_price"].iloc[0]) - 1
+    aligned["excess_return"] = aligned["account_return"] - aligned["benchmark_return"]
+    ar = aligned["equity"].pct_change().dropna(); br = aligned["benchmark_price"].pct_change().dropna()
+    def _mdd(series):
+        peak=series.cummax(); return float((series/peak-1).min())
+    def _vol(r): return float(r.std()*math.sqrt(252)) if len(r)>1 else None
+    def _sharpe(r):
+        if len(r)<2: return None
+        v=float(r.std())
+        return float(r.mean()/v*math.sqrt(252)) if v>0 else None
+    observations=len(aligned)
+    return {"status":"Evidence available" if observations>=minimum_days else "Insufficient evidence",
+            "benchmark":benchmark_ticker,"observations":observations,
+            "account_return":float(aligned["account_return"].iloc[-1]),
+            "benchmark_return":float(aligned["benchmark_return"].iloc[-1]),
+            "excess_return":float(aligned["excess_return"].iloc[-1]),
+            "account_max_drawdown":_mdd(aligned["equity"]),
+            "benchmark_max_drawdown":_mdd(aligned["benchmark_price"]),
+            "account_volatility":_vol(ar),"benchmark_volatility":_vol(br),
+            "account_sharpe":_sharpe(ar),"benchmark_sharpe":_sharpe(br),"frame":aligned}
+
+
+def fetch_benchmark_history(start_date, end_date=None, ticker="SPY"):
+    """Fetch benchmark closes with yfinance; returns an empty frame when unavailable."""
+    try:
+        import yfinance as yf
+        data = yf.download(ticker, start=str(start_date), end=None if end_date is None else str(end_date),
+                           progress=False, auto_adjust=True)
+        if data is None or data.empty:
+            return pd.DataFrame()
+        data=data.reset_index()
+        if isinstance(data.columns, pd.MultiIndex):
+            data.columns=[c[0] if isinstance(c,tuple) else c for c in data.columns]
+        return data
+    except Exception:
+        return pd.DataFrame()
