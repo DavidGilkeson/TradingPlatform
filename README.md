@@ -1,27 +1,9 @@
-# Atlas Sprint 34.3 — Strategy & Atlas Score Analytics
+# Atlas — Sprint 35.3
 
-Builds on Sprint 34.2 and adds evidence-aware analysis of Atlas intelligence captured at the exact paper-trade entry.
+This package is based on Sprint 35.2 and adds the Sprint 35.3 release-candidate regression and edge-case hardening work.
 
-Highlights:
-- exact BUY-order lineage via `paper_trade_entry_links`
-- immutable entry-time intelligence snapshots
-- Atlas Score-band, confidence and entry-verdict outcome analytics
-- scaled-entry P&L allocation
-- minimum sample/evidence thresholds
-- descriptive score/outcome relationship check
+- See `README_SPRINT_35_3.md` for the changes and test results.
+- See `RELEASE_TEST_MATRIX_35_3.md` for edge-case coverage and a manual smoke-test checklist.
+- Run `python -m compileall -q .` and `python -m pytest -q` from this directory to validate the package.
 
-Regression: **239 tests passed**, with 1 pre-existing pandas FutureWarning.
-
-## Sprint 34.4 — Benchmark & SPY Comparison Polish
-- Same-period Atlas vs SPY cumulative return comparison
-- Excess return, max drawdown, volatility and Sharpe comparison
-- Minimum-sample evidence labelling and safe benchmark-data fallback
-- 243 regression tests passing
-
-## Sprint 35.1 — Error Handling & Recovery
-- Added dependency-light operational resilience helpers (`paper_trading/resilience.py`).
-- Added safe handling for connection/timeouts, SQLite errors, and missing/unavailable files.
-- Added read-only database preflight that does not create a missing DB by accident.
-- Added reusable Streamlit recovery messaging (`paper_trading/recovery_ui.py`).
-- Documented the observed Save Favourites / DownloadButton disconnect case and safe recovery path.
-- Recovery is deliberately non-destructive: no paper-trading data is deleted or silently repaired.
+**Verified result:** 274 passed, 1 existing pandas FutureWarning.

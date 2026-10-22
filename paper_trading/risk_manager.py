@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 from dataclasses import dataclass
+from math import isfinite
 
 
 @dataclass(slots=True)
@@ -37,6 +38,17 @@ def calculate_position_size(
 ) -> RiskPlan:
     """Calculate risk-based share sizing for a long paper trade."""
 
+    numeric_inputs = {
+        "account equity": account_equity,
+        "entry price": entry_price,
+        "stop price": stop_price,
+        "risk percentage": risk_pct,
+        "maximum position percentage": max_position_pct,
+    }
+    if target_price is not None:
+        numeric_inputs["target price"] = target_price
+    if any(not isfinite(float(value)) for value in numeric_inputs.values()):
+        raise ValueError("Risk inputs must be finite numbers.")
     if account_equity <= 0:
         raise ValueError("Account equity must be greater than zero.")
     if entry_price <= 0 or stop_price <= 0:
@@ -106,6 +118,36 @@ def validate_order_risk(
 
     blockers: list[str] = []
     warnings: list[str] = []
+
+    numeric_inputs = {
+        "account equity": account_equity,
+        "available cash": cash,
+        "share quantity": shares,
+        "entry price": entry_price,
+        "stop price": stop_price,
+        "risk percentage limit": risk_pct_limit,
+        "maximum position percentage": max_position_pct,
+        "minimum reward/risk": minimum_reward_risk,
+    }
+    if target_price is not None:
+        numeric_inputs["target price"] = target_price
+    try:
+        finite = all(isfinite(float(value)) for value in numeric_inputs.values())
+    except (TypeError, ValueError):
+        finite = False
+    if not finite:
+        blockers.append("Order risk inputs must be finite numbers.")
+        return RiskDecision(False, warnings, blockers)
+    if account_equity <= 0:
+        blockers.append("Account equity must be greater than zero.")
+    if cash < 0:
+        blockers.append("Available paper cash cannot be negative.")
+    if entry_price <= 0 or stop_price <= 0:
+        blockers.append("Entry and stop prices must be greater than zero.")
+    if risk_pct_limit <= 0 or max_position_pct <= 0 or minimum_reward_risk < 0:
+        blockers.append("Risk and exposure limits must be valid positive values.")
+    if blockers:
+        return RiskDecision(False, warnings, blockers)
 
     if shares <= 0:
         blockers.append("Share quantity must be greater than zero.")

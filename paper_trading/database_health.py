@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import shutil
 import sqlite3
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -97,7 +96,17 @@ def restore_database_backup(db_path: str | Path, backup_path: str | Path) -> Pat
         raise ValueError("Refusing to restore an unhealthy backup: " + "; ".join(health.issues))
     target.parent.mkdir(parents=True, exist_ok=True)
     safety_copy = target.with_suffix(target.suffix + ".pre_restore")
+    # Use SQLite's backup API rather than byte-copying the main DB file: with
+    # WAL journaling, recent committed pages may still live in the -wal file.
     if target.exists():
-        shutil.copy2(target, safety_copy)
-    shutil.copy2(backup, target)
+        with sqlite3.connect(target) as current, sqlite3.connect(safety_copy) as safe:
+            current.backup(safe)
+        safety_health = database_health(safety_copy)
+        if not safety_health.ok:
+            raise ValueError("Could not create a healthy pre-restore safety copy: " + "; ".join(safety_health.issues))
+    with sqlite3.connect(backup) as source, sqlite3.connect(target) as destination:
+        source.backup(destination)
+    restored_health = database_health(target)
+    if not restored_health.ok:
+        raise ValueError("Restored database failed validation: " + "; ".join(restored_health.issues))
     return safety_copy

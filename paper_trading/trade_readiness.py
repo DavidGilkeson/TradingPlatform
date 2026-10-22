@@ -1,11 +1,13 @@
 """Transparent pre-trade readiness assessment for Atlas paper BUY orders."""
 from __future__ import annotations
+from math import isfinite
 
 
 def _score_value(value):
     try:
-        return float(value)
-    except (TypeError, ValueError):
+        number = float(value)
+        return number if isfinite(number) else None
+    except (TypeError, ValueError, OverflowError):
         return None
 
 
