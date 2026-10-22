@@ -5,6 +5,11 @@ from __future__ import annotations
 from pathlib import Path
 import pandas as pd
 
+from atlas_cache import TTLCache
+
+# A short-lived cache avoids repeated network calls during Streamlit reruns.
+_PRICE_CACHE = TTLCache(ttl_seconds=60, max_entries=500)
+
 
 def load_local_ticker_universe(
     csv_path: str = "data/sp500.csv",
@@ -35,7 +40,7 @@ def load_local_ticker_universe(
     return list(dict.fromkeys(value for value in values if value))
 
 
-def latest_live_price(ticker: str) -> float | None:
+def _fetch_latest_live_price(ticker: str) -> float | None:
     """Return a recent market price using yfinance, or None on failure.
 
     This is a real market-data fallback, never an artificial default price.
@@ -101,3 +106,20 @@ def build_ticker_options(
             if str(value).strip()
         )
     )
+
+
+def latest_live_price(ticker: str) -> float | None:
+    """Return a cached recent market price, refreshing at most once per TTL.
+
+    Failed lookups are not cached, so transient network errors can recover on
+    the next call. Use clear_price_cache() after an explicit market refresh.
+    """
+    symbol = str(ticker or "").upper().strip()
+    if not symbol:
+        return None
+    return _PRICE_CACHE.get_or_compute(symbol, lambda: _fetch_latest_live_price(symbol))
+
+
+def clear_price_cache(ticker: str | None = None) -> None:
+    """Invalidate one ticker or the entire live-price cache."""
+    _PRICE_CACHE.clear(str(ticker).upper().strip() if ticker else None)
